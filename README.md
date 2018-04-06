@@ -6,4 +6,3 @@ Caltech CS 156b Project - Netflix Challenge
 * **Karthik Karnik**
 * **Alix Espino**
 * **Karthik Nair**
-
