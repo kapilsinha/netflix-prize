@@ -5,11 +5,11 @@ LDFLAGS =
 
 # Add any extra .cpp files to this line to
 # have them compiled automatically.
-SRCS = readfile.cpp
+SRCS = readfile.cpp matrix_factorization.cpp
 
 OBJS = $(SRCS:.cpp=.o)
 
-all: readfile
+all: readfile matrix_factorization
 
 readfile: $(OBJS)
 	g++ -o $@ $^ $(LDFLAGS)
@@ -18,4 +18,4 @@ readfile: $(OBJS)
 	$(CC) -c $(CPPFLAGS) $< -o $@
 
 clean :
-	rm -f readfile *.o
+	rm -f readfile matrix_factorization *.o
