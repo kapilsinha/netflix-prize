@@ -48,7 +48,7 @@ MatrixFactorization::~MatrixFactorization()
 /**
  * @brief Computes gradient of regularized loss function with respect to Ui
  * multiplied by eta
- * 
+ *
  * @param
  * Ui : ith row of U
  * Yij : training point
@@ -74,7 +74,7 @@ double MatrixFactorization::grad_U(tuple<int, int, int> Ui, int Yij,
 /**
  * @brief Computes gradient of regularized loss function with respect to Vj
  * multiplied by eta
- * 
+ *
  * @param
  * Vj : jth column of V^T
  * Yij : training point
@@ -127,6 +127,7 @@ double MatrixFactorization::get_err(tuple<int, int, int> * U,
         // I think we always access columns of V (rows of V^T) so it may be
         // better to store V^T instead of V since accessing columns is expensive
     return 0.0;
+}
 }
 
 /**
@@ -182,7 +183,7 @@ tuple<int, int, int> * MatrixFactorization::getV()
  */
 void print_tuple(tuple<int, int, int> tup) {
     cout << "(" << get<0>(tup) << " " << get<1>(tup) << " "
-         << get<2>(tup) << " " << ")" << endl; 
+         << get<2>(tup) << " " << ")" << endl;
 }
 
 /**
