@@ -145,10 +145,12 @@ double MatrixFactorization::get_err(tuple<int, int, int> *U,
  */
 
 void MatrixFactorization::train_model(int M, int N, int K, double eta,
-        double reg, &array<array<int, 3>, /* TODO: Enter length */> Y, 
+        double reg, array<array<int, 3>, /* TODO: Enter length */> Y, 
     double eps = 0.0001,
         int max_epochs = 300) {
     // Based off of CS 155 solutions 
+    double prev_err = 9999999;
+    double prev_diff = 9999999; 
 
     std::random_device rd;  // Will be used to obtain a seed for random engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
@@ -183,17 +185,30 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             array<double, K> Ui = U[y[0]];
             array<double, K> Vj = V[y[1]];
 
-            // TODO: Update the row of U using the gradient
+            // Update the row of U using the gradient
             array<double, K> gradient_U = grad_U(Ui, Yij, Vj, reg, eta);
             for (int i = 0; i < gradient_U.size(); i++) {
-                U[]
+                U[user][i] -= gradient_U[i]
             }
 
-            // TODO: Update the row of V using the gradient
+            // Update the row of V using the gradient
+            array<double, K> gradient_V = grad_V(Ui, Yij, Vj, reg, eta);
+            for (int i = 0; i < gradient_V.size(); i++) {
+                V[movie][i] -= gradient_V[i]
+            }
 
         }
 
-        // TODO: Check early stopping conditions 
+        // Check early stopping conditions 
+        double curr_err = get_err(U, V, Y)
+        if (prev_diff / (curr_err - prev_err) < eps) {
+            break;
+        }
+        else {
+            prev_diff = curr_err - prev_err;
+            prev_err = curr_err;
+        }
+
     }
     return;
 }
