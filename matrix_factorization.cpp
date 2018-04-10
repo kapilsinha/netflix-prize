@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <tuple>
+#include <array>
 #include "matrix_factorization.hpp"
 #include "readfile.hpp"
 
@@ -27,7 +28,7 @@ using namespace std;
  * but I am keeping this class general so that bridge will need to be made
  * later.
  */
-MatrixFactorization::MatrixFactorization(tuple<int, int, int> * Y)
+MatrixFactorization::MatrixFactorization(tuple<int, int, int> *Y)
 {
     Y = this.Y;
 }
@@ -58,7 +59,7 @@ MatrixFactorization::~MatrixFactorization()
  *
  * @return gradient * eta
  */
-double MatrixFactorization::grad_U(tuple<int, int, int> Ui, int Yij,
+array<double, K> MatrixFactorization::grad_U(tuple<int, int, int> Ui, int Yij,
                         tuple<int, int, int> Vj, double reg, double eta)
 {
     // Based off of CS 155 solutions (check it)
@@ -111,8 +112,8 @@ double MatrixFactorization::grad_V(tuple<int, int, int> Vj, int Yij,
  *
  * @return error (MSE)
  */
-double MatrixFactorization::get_err(tuple<int, int, int> * U,
-        tuple<int, int, int> * V, tuple<int, int, int> * Y, double reg = 0.0)
+double MatrixFactorization::get_err(tuple<int, int, int> *U,
+        tuple<int, int, int> *V, tuple<int, int, int> *Y, double reg = 0.0)
 {
     // Based off of CS 155 solutions (check it)
     // TODO
@@ -126,8 +127,8 @@ double MatrixFactorization::get_err(tuple<int, int, int> * U,
         // FILL IN THE REST
         // I think we always access columns of V (rows of V^T) so it may be
         // better to store V^T instead of V since accessing columns is expensive
-    return 0.0;
-}
+    }
+    return err;
 }
 
 /**
@@ -142,12 +143,58 @@ double MatrixFactorization::get_err(tuple<int, int, int> * U,
  *       eps times the decrease in MSE after the first epoch, we stop training
  * max_epochs : maximum number of epochs for training
  */
+
 void MatrixFactorization::train_model(int M, int N, int K, double eta,
-        double reg, tuple<int, int, int> * Y, double eps = 0.0001,
-        int max_epochs = 300)
-{
-    // Based off of CS 155 solutions (check it)
-    // TODO
+        double reg, &array<array<int, 3>, /* TODO: Enter length */> Y, 
+    double eps = 0.0001,
+        int max_epochs = 300) {
+    // Based off of CS 155 solutions 
+
+    std::random_device rd;  // Will be used to obtain a seed for random engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+    std::uniform_real_distribution<> dis(-0.5, 0.5); // Uniform distribution 
+
+    // Define the U matrix with M rows and K columns
+    array<array<double, K>, M> U;
+    // Initialize the values of U to be uniform between -0.5 and 0.5
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < K; j++) {
+            U[i][j] = dis(gen);
+        }
+    }
+    // Define the V matrix with N rows and K columns
+    array<array<double, K>, N> V;
+    // Initialize the values of V to be uniform between -0.5 and 0.5
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < K; j++) {
+            V[i][j] = dis(gen);
+        }
+    }
+
+    for (int epoch = 0; epoch < max_epochs; epoch++) {
+        // TODO: Find random permutation of Y
+        for (int point = 0; point < Y.size(); point++) {
+            array<int, 3> y = Y[point];
+            int user = y[0];
+            int movie = y[1];
+            int Yij = y[3];
+            
+            // Find the row and column to be updated
+            array<double, K> Ui = U[y[0]];
+            array<double, K> Vj = V[y[1]];
+
+            // TODO: Update the row of U using the gradient
+            array<double, K> gradient_U = grad_U(Ui, Yij, Vj, reg, eta);
+            for (int i = 0; i < gradient_U.size(); i++) {
+                U[]
+            }
+
+            // TODO: Update the row of V using the gradient
+
+        }
+
+        // TODO: Check early stopping conditions 
+    }
     return;
 }
 
@@ -164,7 +211,7 @@ tuple<int, int, int> * MatrixFactorization::getY()
  * @brief Returns U array (sparse matrix represented as 3-tuples)
  * @return U
  */
-tuple<int, int, int> * MatrixFactorization::getU()
+tuple<int, int, int> *MatrixFactorization::getU()
 {
     return U;
 }
@@ -173,7 +220,7 @@ tuple<int, int, int> * MatrixFactorization::getU()
  * @brief Returns V array (sparse matrix represented as 3-tuples)
  * @return V
  */
-tuple<int, int, int> * MatrixFactorization::getV()
+tuple<int, int, int> *MatrixFactorization::getV()
 {
     return V;
 }
@@ -196,8 +243,8 @@ int main(void)
     // Set these variables - you can probably set the Y_train by calling
     // the Data class and wrangling with it to remove the date and set the
     // M, N, and K to the appropriate sizes (we can vary K)
-    tuple<int, int, int> * Y_train;
-    tuple<int, int, int> * Y_test;
+    tuple<int, int, int> *Y_train;
+    tuple<int, int, int> *Y_test;
     int M;
     int N;
     int K;
