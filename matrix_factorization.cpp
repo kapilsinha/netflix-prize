@@ -240,13 +240,13 @@ tuple<int, int, int> *MatrixFactorization::getV()
     return V;
 }
 
-/**
- * Used only for testing purposes (printing in main method)
- */
-void print_tuple(tuple<int, int, int> tup) {
-    cout << "(" << get<0>(tup) << " " << get<1>(tup) << " "
-         << get<2>(tup) << " " << ")" << endl;
-}
+// /**
+//  * Used only for testing purposes (printing in main method)
+//  */
+// void print_tuple(tuple<int, int, int> tup) {
+//     cout << "(" << get<0>(tup) << " " << get<1>(tup) << " "
+//          << get<2>(tup) << " " << ")" << endl;
+// }
 
 /**
  * Shouldn't be used ultimately (call methods in another file).
@@ -276,11 +276,11 @@ int main(void)
 
     cout << "Error: " << error << endl;
     cout << "U element 1: ";
-    print_tuple (data.getU()[0]);
+    // print_tuple (data.getU()[0]);
     cout << "V element 1: ";
-    print_tuple (data.getV()[0]);
+    // print_tuple (data.getV()[0]);
     cout << "Y element 1: ";
-    print_tuple (data.getY()[0]);
+    // print_tuple (data.getY()[0]);
 
     return 0;
 }
