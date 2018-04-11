@@ -14,6 +14,8 @@
 
 using namespace std;
 
+int
+
 /**
  * @brief Constructs a MatrixFactorization instance, which contains the sparse
  * input data (arranged in 3-tuples), and the generated matrix factors U and V
@@ -59,16 +61,16 @@ MatrixFactorization::~MatrixFactorization()
  *
  * @return gradient * eta
  */
-array<double, K> MatrixFactorization::grad_U(tuple<int, int, int> Ui, int Yij,
-                        tuple<int, int, int> Vj, double reg, double eta)
+array<double, K> MatrixFactorization::grad_U(array<int, 3> Ui, int Yij,
+                        array<int, 3> Vj, double reg, double eta)
 {
     // Based off of CS 155 solutions (check it)
-    double elem1 = (1 - reg * eta) * get<0>(Ui)
-                   + eta * get<0>(Vj) * (Yij - get<0>(Ui) * get<0>(Vj))
-    double elem2 = (1 - reg * eta) * get<1>(Ui)
-                   + eta * get<1>(Vj) * (Yij - get<1>(Ui) * get<1>(Vj))
-    double elem3 = (1 - reg * eta) * get<2>(Ui)
-                   + eta * get<2>(Vj) * (Yij - get<2>(Ui) * get<2>(Vj))
+    double elem1 = (1 - reg * eta) * (Ui[0])
+                   + eta * (Vj[0]) * (Yij - (Ui[0]) * (Vj[0]))
+    double elem2 = (1 - reg * eta) * (Ui[1])
+                   + eta * (Vj[1]) * (Yij - (Ui[1]) * (Vj[1]))
+    double elem3 = (1 - reg * eta) * (Ui[2])
+                   + eta * (Vj[2]) * (Yij - (Ui[2]) * (Vj[2]))
     return make_tuple(elem1, elem2, elem3);
 }
 
@@ -85,16 +87,16 @@ array<double, K> MatrixFactorization::grad_U(tuple<int, int, int> Ui, int Yij,
  *
  * @return gradient * eta
  */
-double MatrixFactorization::grad_V(tuple<int, int, int> Vj, int Yij,
-                        tuple<int, int, int> Ui, double reg, double eta)
+double MatrixFactorization::grad_V(array<int, 3> Vj, int Yij,
+                        array<int, 3> Ui, double reg, double eta)
 {
     // Based off of CS 155 solutions (check it)
-    double elem1 = (1 - reg * eta) * get<0>(Vj)
-                   + eta * get<0>(Ui) * (Yij - get<0>(Ui) * get<0>(Vj))
-    double elem2 = (1 - reg * eta) * get<1>(Vj)
-                   + eta * get<1>(Ui) * (Yij - get<1>(Ui) * get<1>(Vj))
-    double elem3 = (1 - reg * eta) * get<2>(Vj)
-                   + eta * get<2>(Ui) * (Yij - get<2>(Ui) * get<2>(Vj))
+    double elem1 = (1 - reg * eta) * (Vj[0])
+                   + eta * (Ui[0]) * (Yij - (Ui[0]) * (Vj[0]))
+    double elem2 = (1 - reg * eta) * (Vj[1])
+                   + eta * (Ui[1]) * (Yij - (Ui[1]) * (Vj[1]))
+    double elem3 = (1 - reg * eta) * (Vj[2])
+                   + eta * (Ui[2]) * (Yij - (Ui[2]) * (Vj[2]))
     return make_tuple(elem1, elem2, elem3);
 }
 
@@ -112,8 +114,8 @@ double MatrixFactorization::grad_V(tuple<int, int, int> Vj, int Yij,
  *
  * @return error (MSE)
  */
-double MatrixFactorization::get_err(tuple<int, int, int> *U,
-        tuple<int, int, int> *V, tuple<int, int, int> *Y, double reg = 0.0)
+double MatrixFactorization::get_err(array<int, 3> *U,
+        array<int, 3> *V, array<int, 3> *Y, double reg = 0.0)
 {
     // Based off of CS 155 solutions (check it)
     // TODO
@@ -145,16 +147,16 @@ double MatrixFactorization::get_err(tuple<int, int, int> *U,
  */
 
 void MatrixFactorization::train_model(int M, int N, int K, double eta,
-        double reg, array<array<int, 3>, /* TODO: Enter length */> Y, 
+        double reg, array<array<int, 3>, /* TODO: Enter length */> Y,
     double eps = 0.0001,
         int max_epochs = 300) {
-    // Based off of CS 155 solutions 
+    // Based off of CS 155 solutions
     double prev_err = 9999999;
-    double prev_diff = 9999999; 
+    double prev_diff = 9999999;
 
     std::random_device rd;  // Will be used to obtain a seed for random engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_real_distribution<> dis(-0.5, 0.5); // Uniform distribution 
+    std::uniform_real_distribution<> dis(-0.5, 0.5); // Uniform distribution
 
     // Define the U matrix with M rows and K columns
     array<array<double, K>, M> U;
@@ -180,7 +182,7 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             int user = y[0];
             int movie = y[1];
             int Yij = y[3];
-            
+
             // Find the row and column to be updated
             array<double, K> Ui = U[y[0]];
             array<double, K> Vj = V[y[1]];
@@ -199,7 +201,7 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
 
         }
 
-        // Check early stopping conditions 
+        // Check early stopping conditions
         double curr_err = get_err(U, V, Y)
         if (prev_diff / (curr_err - prev_err) < eps) {
             break;
