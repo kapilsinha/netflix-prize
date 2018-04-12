@@ -7,8 +7,9 @@ import numpy as np
 def get_mu_data(path, inds):
     # Read data into a pandas dataframe
     mu_data = pd.read_csv(mu_path, sep=' ', header=None)
-    mu_data.columns = ["User Number", "Movie Number", "Date Number", "Rating"]
+    #mu_data.columns = ["User Number", "Movie Number", "Date Number", "Rating"]
 
+    #print(mu_data)
     # Read indices
     mu_idx = pd.read_table(mu_ind_path, header=None)
     mu_idx.columns = ["Index"]
@@ -21,11 +22,12 @@ def get_mu_data(path, inds):
         dataLists.append(mu_data.loc[val])
 
     # Output all the data to csv files
-    dataLists[0].to_csv("mu_train.csv")
-    dataLists[1].to_csv("mu_val.csv")
-    dataLists[2].to_csv("mu_hidden.csv")
-    dataLists[3].to_csv("mu_probe.csv")
-    dataLists[4].to_csv("mu_qual.csv")
+    print(dataLists[0])
+    dataLists[0].to_csv("mu_train.csv", header=False, index=False)
+    dataLists[1].to_csv("mu_val.csv", header=False, index=False)
+    dataLists[2].to_csv("mu_hidden.csv", header=False, index=False)
+    dataLists[3].to_csv("mu_probe.csv", header=False, index=False)
+    dataLists[4].to_csv("mu_qual.csv", header=False, index=False)
 
 # Function to parse and separate the um data
 def get_um_data(path, inds):
@@ -53,11 +55,11 @@ def get_um_data(path, inds):
     dataLists[4].to_csv("um_qual.csv")
 
 # Get the file paths
-mu_path = "mu/all.dta"
-mu_ind_path = "mu/all.idx"
+mu_path = "all.dta"
+mu_ind_path = "all.idx"
 
 um_path = "um/all.dta"
 um_ind_path = "um/all.idx"
 
 get_mu_data(mu_path, mu_ind_path)
-get_um_data(um_path, um_ind_path)
+#get_um_data(um_path, um_ind_path)
