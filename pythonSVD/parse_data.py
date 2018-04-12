@@ -7,7 +7,7 @@ import numpy as np
 def get_mu_data(path, inds):
     # Read data into a pandas dataframe
     mu_data = pd.read_csv(mu_path, sep=' ', header=None)
-    #mu_data.columns = ["User Number", "Movie Number", "Date Number", "Rating"]
+    mu_data.columns = ["User Number", "Movie Number", "Date Number", "Rating"]
 
     #print(mu_data)
     # Read indices
@@ -23,11 +23,11 @@ def get_mu_data(path, inds):
 
     # Output all the data to csv files
     print(dataLists[0])
-    dataLists[0].to_csv("mu_train.csv", header=False, index=False)
-    dataLists[1].to_csv("mu_val.csv", header=False, index=False)
-    dataLists[2].to_csv("mu_hidden.csv", header=False, index=False)
-    dataLists[3].to_csv("mu_probe.csv", header=False, index=False)
-    dataLists[4].to_csv("mu_qual.csv", header=False, index=False)
+    dataLists[0].to_csv("mu_train.csv", header=True, index=False)
+    dataLists[1].to_csv("mu_val.csv", header=True, index=False)
+    dataLists[2].to_csv("mu_hidden.csv", header=True, index=False)
+    dataLists[3].to_csv("mu_probe.csv", header=True, index=False)
+    dataLists[4].to_csv("mu_qual.csv", header=True, index=False)
 
 # Function to parse and separate the um data
 def get_um_data(path, inds):
