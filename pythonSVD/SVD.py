@@ -1,5 +1,5 @@
 from surprise import SVD
-from surprise import Dataset
+from surprise import Dataset, Reader
 from surprise.model_selection import cross_validate
 import pandas as pd
 
@@ -19,7 +19,7 @@ algo = SVD(n_factors=K)
 
 # Build dataset from csv file
 reader = Reader(line_format="user item timestamp rating")
-data = pd.read_csv("data/mu_train.csv")
+data = pd.read_csv("mu_train.csv")
 data = Dataset.load_from_df(data, reader)
 train = DatasetAutoFolds.build_full_trainset(data)
 
