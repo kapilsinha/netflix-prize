@@ -133,6 +133,7 @@ void print_tuple(tuple<int, int, int, int> tup) {
  * Shouldn't be used ultimately (call methods in another file).
  * This is for testing purposes.
  */
+/*
 int main(void)
 {
     Data data;
@@ -172,3 +173,4 @@ int main(void)
 
     return 0;
 }
+*/
