@@ -58,10 +58,6 @@ MatrixFactorization::~MatrixFactorization()
         delete[] V[0];
         delete[] V;
     }
-    else {
-        delete[] U;
-        delete[] V;
-    }
     U = nullptr;
     V = nullptr;
 }
@@ -357,10 +353,10 @@ int main(void)
      make_tuple(4,4,2), make_tuple(4,5,2), make_tuple(4,6,4),
      make_tuple(5,1,1), make_tuple(5,2,4), make_tuple(5,3,4)};
     */
-
+    
     // Test 2 (legitimate test)
-    int train_set = 5;
-    int Y_train_size = ARRAY_5_SIZE;
+    int train_set = 2;
+    int Y_train_size = ARRAY_2_SIZE;
 
     int test_set = 3;
     int Y_test_size = ARRAY_3_SIZE;
@@ -399,6 +395,7 @@ int main(void)
     cout << "Train error: " << train_error << endl;
     cout << "Test error: " << test_error << endl;
     cout << "\n" << endl;
+
     cout << "Training set predictions" << endl;
     for (int m = 0; m < 10; m++) {
         int i = get<0>(Y_train[m]);
@@ -407,6 +404,7 @@ int main(void)
         cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
         cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
     }
+    
     cout << "\n" << endl;
     cout << "Test set predictions" << endl;
     for (int m = 0; m < 10; m++) {
