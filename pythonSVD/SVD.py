@@ -15,7 +15,7 @@ def write_preds(svd, file):
             preds.append(svd.predict(line[0], line[1]))
     # TODO: Check if txt files are okay
     file = "predictions.txt"
-    file.writelines(["%s\n" % item  for item in list])
+    file.writelines(["%s\n" % item for item in preds])
 
 # We'll use the famous SVD algorithm.
 algo = SVD(n_factors=K)
@@ -33,4 +33,5 @@ print("Training ...")
 # Fit the data
 algo.fit(train)
 
+print("Writing predictions ...")
 write_preds(algo, "mu/qual.dta")
