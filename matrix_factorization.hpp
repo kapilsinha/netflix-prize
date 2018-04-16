@@ -19,7 +19,6 @@ private:
     int M;
     int N;
     int K;
-    tuple<int, int, int> *Y;
     double **U;
     double **V;
     bool is_trained = false; // whether model has been trained or not
@@ -27,14 +26,15 @@ private:
     double *grad_U(double *Ui, int Yij, double *Vj, double reg, double eta);
     double *grad_V(double *Vj, int Yij, double *Ui, double reg, double eta);
 public:
-    MatrixFactorization(tuple<int, int, int> * Y); // Constructor
+    MatrixFactorization(); // Constructor
     ~MatrixFactorization(); // Destructor
-    double get_err(double **U, double **V,
-                   tuple<int, int, int> * Y, double reg = 0.0);
+    double get_err(double **U, double **V, tuple<int, int, int> * Y,
+            int Y_length, double reg = 0.0);
     // Trains model to generate U and V
     void train_model(int M, int N, int K, double eta, double reg,
+            tuple<int, int, int> * Y, int Y_length, 
             double eps = 0.0001, int max_epochs = 300);
-    tuple<int, int, int> *getY(); // Returns Y
+    double predictRating(int i, int j);
     double **getU(); // Returns U
     // double *getUi(int row); // Returns U[row]
     double **getV(); // Returns V

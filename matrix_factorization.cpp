@@ -14,12 +14,14 @@
 #include <random> // std::random_device, std::mt19937,
                   // std::uniform_real_distribution
 #include <numeric> // std::iota
-// #include <chrono> // std::chrono::system_clock
-// #include <iterator> // std::begin, std::end
-// #include <array>
 
 #include "matrix_factorization.hpp"
-// #include "readfile.hpp"
+
+#define ARRAY_1_SIZE 94362233
+#define ARRAY_2_SIZE 1965045
+#define ARRAY_3_SIZE 1964391
+#define ARRAY_4_SIZE 1374739
+#define ARRAY_5_SIZE 2749898
 
 using namespace std;
 
@@ -39,9 +41,8 @@ using namespace std;
  */
 
 // Actually I don't see the value in storing Y anymore...
-MatrixFactorization::MatrixFactorization(tuple<int, int, int> *Y)
+MatrixFactorization::MatrixFactorization()
 {
-    this->Y = Y;
 }
 
 /**
@@ -49,8 +50,6 @@ MatrixFactorization::MatrixFactorization(tuple<int, int, int> *Y)
  */
 MatrixFactorization::~MatrixFactorization()
 {
-    delete[] Y;
-    Y = nullptr;
     if (is_trained) {
         // Strange way of deleting variables but it fits the way I
         // initialized it
@@ -131,15 +130,12 @@ double *MatrixFactorization::grad_V(double *Vj, int Yij,
  *
  * @return error (MSE)
  */
-double MatrixFactorization::get_err(double **U,
-        double **V, tuple<int, int, int> *Y, double reg /* = 0.0 */)
+double MatrixFactorization::get_err(double **U, double **V,
+        tuple<int, int, int> *Y, int Y_length, double reg /* = 0.0 */)
 {
     // Based off of CS 155 solutions (check it)
     double err = 0.0;
-    // Hack to calculate length (from geeksforgeeks 8) ) - check that it works
-    // maybe can use sizeof ?
-    int Y_size = *(&Y + 1) - Y;
-    for (int m = 0; m < Y_size; m++) {
+    for (int m = 0; m < Y_length; m++) {
         int i = get<0>(Y[m]);
         int j = get<1>(Y[m]);
         int Yij = get<2>(Y[m]);
@@ -167,7 +163,7 @@ double MatrixFactorization::get_err(double **U,
             err += 0.5 * reg * V_frobenius_squared_norm;
         }
     }
-    return err / Y_size;
+    return err / Y_length;
 }
 
 /**
@@ -184,7 +180,9 @@ double MatrixFactorization::get_err(double **U,
  */
 
 void MatrixFactorization::train_model(int M, int N, int K, double eta,
-        double reg, double eps /* = 0.0001 */, int max_epochs /* = 300 */) {
+        double reg, tuple<int, int, int> *Y, int Y_length,
+        double eps /* = 0.0001 */, int max_epochs /* = 300 */) {
+    cout << "Training model..." << endl;
     // Based off of CS 155 solutions
     this->M = M;
     this->N = N;
@@ -221,18 +219,16 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
         }
     }
 
-    // Hack to calculate length (from geeksforgeeks 8) ) - check that it works
-    int Y_size = *(&Y + 1) - Y;
     double delta;
 
     // Creates list of indices so we can shuffle them later
     // http://en.cppreference.com/w/cpp/algorithm/iota
-    std::list<int> indices(Y_size);
+    std::list<int> indices(Y_length);
     std::iota(indices.begin(), indices.end(), 0);
 
     for (int epoch = 0; epoch < max_epochs; epoch++) {
         cout << "Epoch: " << epoch << endl;
-        double before_E_in = get_err(U, V, Y, reg);
+        double before_E_in = get_err(U, V, Y, Y_length, reg);
         std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
         std::iota(shuffled_indices.begin(),
                   shuffled_indices.end(), indices.begin());
@@ -260,12 +256,18 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
         }
 
         // Check early stopping conditions
-        double E_in = get_err(U, V, Y, reg);
+        double E_in = get_err(U, V, Y, Y_length, reg);
         if (epoch == 0) {
             delta = before_E_in - E_in;
         }
         else if (before_E_in - E_in < eps * delta) {
+            cout << "Delta error: " << (before_E_in - E_in);
+            cout << ", Threshold delta error: " << (eps * delta) << endl;
             break;
+        }
+        else {
+            cout << "Delta error: " << (before_E_in - E_in);
+            cout << ", Threshold delta error: " << (eps * delta) << endl;
         }
     }
     is_trained = true;
@@ -273,12 +275,22 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
 }
 
 /**
- * @brief Returns Y array (sparse matrix represented as 3-tuples)
- * @return Y
+ * @brief Predicts rating given a user and movie.
+ * Note that it subtracts one from the input indices to compute the
+ * matrix outputs (since we start indexing at 0, not 1)
+ * @return predicted rating
  */
-tuple<int, int, int> * MatrixFactorization::getY()
+double MatrixFactorization::predictRating(int i, int j)
 {
-    return Y;
+    if (! is_trained) {
+        cout << "Model not trained yet!" << endl;
+        return 0;
+    }
+    double rating = 0;
+    for (int m = 0; m < K; m++) {
+        rating += U[i - 1][m] * V[j - 1][m];
+    }
+    return rating;
 }
 
 /**
@@ -318,37 +330,91 @@ int main(void)
     // M, N, and K to the appropriate sizes (we can vary K)
     //
     // Arbitrarily chose set 3 and 5 as train and test sets
-    int ARRAY_3_SIZE = 1964391;
-    int ARRAY_5_SIZE = 2749898;
-    tuple<int, int, int> *Y_train = new tuple<int, int, int> [ARRAY_5_SIZE];
-    tuple<int, int, int> *Y_test = new tuple<int, int, int> [ARRAY_3_SIZE];
+    
+    /*
+    // Test 1 (very fast and simple)
+    int M = 5;
+    int N = 9;
+    int K = 3;
+    int Y_train_size = 30;
+    int Y_test_size = 15;
+    tuple<int, int, int> Y_train[30] =
+    {make_tuple(1,1,3), make_tuple(1,2,4), make_tuple(1,3,5),
+     make_tuple(1,7,1), make_tuple(1,8,2), make_tuple(1,9,2),
+     make_tuple(2,4,2), make_tuple(2,5,3), make_tuple(2,6,4),
+     make_tuple(2,7,4), make_tuple(2,8,1), make_tuple(2,9,5),
+     make_tuple(3,1,1), make_tuple(3,2,1), make_tuple(3,3,4),
+     make_tuple(3,4,2), make_tuple(3,5,2), make_tuple(3,6,4),
+     make_tuple(4,1,1), make_tuple(4,2,1), make_tuple(4,3,4),
+     make_tuple(4,7,3), make_tuple(4,8,1), make_tuple(4,9,5),
+     make_tuple(5,4,1), make_tuple(5,5,2), make_tuple(5,6,2),
+     make_tuple(5,7,3), make_tuple(5,8,5), make_tuple(5,9,3)};
+
+    tuple<int, int, int> Y_test[15] =
+    {make_tuple(1,4,3), make_tuple(1,5,2), make_tuple(1,6,1),
+     make_tuple(2,1,4), make_tuple(2,2,2), make_tuple(2,3,2),
+     make_tuple(3,7,3), make_tuple(3,8,1), make_tuple(3,9,5),
+     make_tuple(4,4,2), make_tuple(4,5,2), make_tuple(4,6,4),
+     make_tuple(5,1,1), make_tuple(5,2,4), make_tuple(5,3,4)};
+    */
+
+    // Test 2 (legitimate test)
+    int train_set = 5;
+    int Y_train_size = ARRAY_5_SIZE;
+
+    int test_set = 3;
+    int Y_test_size = ARRAY_3_SIZE;
+
+    tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
+    tuple<int, int, int> *Y_test = new tuple<int, int, int> [Y_test_size];
     int M = 458293;
     int N = 17770;
     int K = 1000;
-    double reg = 0.0;
-    double eta = 0.03;
 
     Data data;
-    tuple<int, int, int, int> *Y_train_original = data.getArray(5);
-    tuple<int, int, int, int> *Y_test_original = data.getArray(3);
-    for (int i = 0; i < ARRAY_5_SIZE; i++) {
+    tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
+    tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
+    for (int i = 0; i < Y_train_size; i++) {
         tuple<int, int, int, int> x = Y_train_original[i];
         Y_train[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
     }
-    for (int i = 0; i < ARRAY_3_SIZE; i++) {
+    for (int i = 0; i < Y_test_size; i++) {
         tuple<int, int, int, int> x = Y_test_original[i];
         Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
     }
-    MatrixFactorization matfac(Y_train);
-    matfac.train_model(M, N, K, eta, reg);
-    double train_error = matfac.get_err(matfac.getU(), matfac.getV(), Y_train);
-    double test_error = matfac.get_err(matfac.getU(), matfac.getV(), Y_test);
+
+
+    double reg = 0.0;
+    double eta = 0.03;
+    MatrixFactorization matfac;
+    matfac.train_model(M, N, K, eta, reg, Y_train, Y_train_size);
+    double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
+                                        Y_train, Y_train_size);
+    double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
+                                       Y_test, Y_test_size);
 
     // Add some more tests
     // (perhaps print out some values of U and V, errors, etc.)
-    cout << "Some checks" << endl;
+    cout << "Some tests" << endl;
     cout << "Train error: " << train_error << endl;
     cout << "Test error: " << test_error << endl;
-
+    cout << "\n" << endl;
+    cout << "Training set predictions" << endl;
+    for (int m = 0; m < 10; m++) {
+        int i = get<0>(Y_train[m]);
+        int j = get<1>(Y_train[m]);
+        int Yij = get<2>(Y_train[m]);
+        cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
+        cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
+    }
+    cout << "\n" << endl;
+    cout << "Test set predictions" << endl;
+    for (int m = 0; m < 10; m++) {
+        int i = get<0>(Y_test[m]);
+        int j = get<1>(Y_test[m]);
+        int Yij = get<2>(Y_test[m]);
+        cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
+        cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
+    }
     return 0;
 }
