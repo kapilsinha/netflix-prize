@@ -3,19 +3,9 @@ from surprise.prediction_algorithms.matrix_factorization import SVD
 from surprise.reader import Reader
 from surprise.dataset import Dataset, DatasetAutoFolds
 import pandas as pd
+import progressbar
 
 K = 20
-
-# Function to write predictions to file 
-def write_preds(svd, file):
-    preds = []
-    with open(file) as f:
-        for line in f:
-            line = line.split()
-            preds.append(svd.predict(line[0], line[1]))
-    # TODO: Check if txt files are okay
-    file = "predictions.txt"
-    file.writelines(["%s\n" % item for item in preds])
 
 # We'll use the famous SVD algorithm.
 algo = SVD(n_factors=K)
@@ -30,8 +20,31 @@ print("Building training set ...")
 train = DatasetAutoFolds.build_full_trainset(data)
 
 print("Training ...")
+
 # Fit the data
 algo.fit(train)
 
+
+# Write the predictions
 print("Writing predictions ...")
-write_preds(algo, "mu/qual.dta")
+preds = []
+x = 0
+file = "mu/qual.dta"
+with open(file) as f:
+    for line in f:
+        if x % 100000 == 0:
+            print(x)
+        x += 1
+        line = line.split()
+        user = int(line[0])
+        item = int(line[1])
+        print(algo.predict(user, item))
+        preds.append(algo.predict(user, item))
+
+# Write to a text file
+file = open("predictions.txt", "w")
+x = 0
+for item in preds:
+    x += 1
+    file.write("%g\n" % item.est)
+print("Done. %d entries written." % x)
