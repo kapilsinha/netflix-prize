@@ -26,11 +26,11 @@ Data::Data(void)
 {
     // Not sure if an array of tuples is the most efficient option but it is 
     // simple - feel free to change it later
-    array_1 = new tuple<int, int, int, int>[ARRAY_1_SIZE];
-    array_2 = new tuple<int, int, int, int>[ARRAY_2_SIZE];
-    array_3 = new tuple<int, int, int, int>[ARRAY_3_SIZE];
-    array_4 = new tuple<int, int, int, int>[ARRAY_4_SIZE];
-    array_5 = new tuple<int, int, int, int>[ARRAY_5_SIZE];
+    array_1 = new tuple<int, int, int, int> [ARRAY_1_SIZE];
+    array_2 = new tuple<int, int, int, int> [ARRAY_2_SIZE];
+    array_3 = new tuple<int, int, int, int> [ARRAY_3_SIZE];
+    array_4 = new tuple<int, int, int, int> [ARRAY_4_SIZE];
+    array_5 = new tuple<int, int, int, int> [ARRAY_5_SIZE];
 
     int array_1_index = 0;
     int array_2_index = 0;
@@ -41,7 +41,7 @@ Data::Data(void)
     ifstream infile("mu/all.dta");
     ifstream idxfile("mu/all.idx");
 
-    while (! infile.eof() & ! idxfile.eof() ) {
+    while (!infile.eof() & !idxfile.eof() ) {
         int user, movie, date, rating;
         int idx;
         infile >> user >> movie >> date >> rating;

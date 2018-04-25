@@ -1,6 +1,6 @@
 /**
  * @file matrix_factorization.cpp
- * @author Kapil Sinha
+ * @author Kapil Sinha (Here just in case anyone forgets who made this)
  * @date 04/06/18
  *
  * @brief Performs matrix factorization on our movie rating data
@@ -14,6 +14,7 @@
 #include <random> // std::random_device, std::mt19937,
                   // std::uniform_real_distribution
 #include <numeric> // std::iota
+#include <math.h> // sqrt
 
 #include "matrix_factorization.hpp"
 
@@ -22,6 +23,9 @@
 #define ARRAY_3_SIZE 1964391
 #define ARRAY_4_SIZE 1374739
 #define ARRAY_5_SIZE 2749898
+
+#define MAX_EPOCHS 20
+#define EPS 0.0001
 
 using namespace std;
 
@@ -40,7 +44,7 @@ using namespace std;
  * later.
  */
 
-// Actually I don't see the value in storing Y anymore...
+// Actually I don't see the value in storing Y anymore... (I dont see the value in life anymore)
 MatrixFactorization::MatrixFactorization()
 {
 }
@@ -78,11 +82,16 @@ MatrixFactorization::~MatrixFactorization()
 double *MatrixFactorization::grad_U(double *Ui, int Yij,
                         double *Vj, double reg, double eta)
 {
-    // Based off of CS 155 solutions (check it)
-    double * gradient = new double [K];
+    double *gradient = new double [K];
+    double dot_product = 0.0;
+    // Compute the dot product
+    for (int i = 0; i < K; i++) {
+        dot_product += Ui[i] * Vj[i];
+    }
+    // Compute the gradient
     for (int m = 0; m < K; m++) {
         gradient[m] = (1 - reg * eta) * Ui[m]
-                   + eta * Vj[m] * (Yij - Ui[m] * Vj[m]);
+                   + eta * Vj[m] * (Yij - dot_product);
     }
     return gradient;
 }
@@ -103,11 +112,16 @@ double *MatrixFactorization::grad_U(double *Ui, int Yij,
 double *MatrixFactorization::grad_V(double *Vj, int Yij,
                         double *Ui, double reg, double eta)
 {
-    // Based off of CS 155 solutions (check it)
-    double * gradient = new double [K];
+    double *gradient = new double [K];
+    double dot_product = 0.0;
+    // Compute the dot product
+    for (int i = 0; i < K; i++) {
+        dot_product += Ui[i] * Vj[i];
+    }
+    // Compute the gradient
     for (int m = 0; m < K; m++) {
         gradient[m] = (1 - reg * eta) * Vj[m]
-                   + eta * Ui[m] * (Yij - Ui[m] * Vj[m]);
+                   + eta * Ui[m] * (Yij - dot_product);
     }
     return gradient;
 }
@@ -127,7 +141,7 @@ double *MatrixFactorization::grad_V(double *Vj, int Yij,
  * @return error (MSE)
  */
 double MatrixFactorization::get_err(double **U, double **V,
-        tuple<int, int, int> *Y, int Y_length, double reg /* = 0.0 */)
+        tuple<int, int, int> *Y, int Y_length, double reg)
 {
     // Based off of CS 155 solutions (check it)
     double err = 0.0;
@@ -136,28 +150,31 @@ double MatrixFactorization::get_err(double **U, double **V,
         int j = get<1>(Y[m]);
         int Yij = get<2>(Y[m]);
 
-        double dot_product = 0;
+        double dot_product = 0.0;
         for (int n = 0; n < K; n++) {
             dot_product += U[i - 1][n] * V[j - 1][n];
         }
         err += 0.5 * (Yij - dot_product) * (Yij - dot_product);
+    }
 
-        if (reg != 0) {
-            double U_frobenius_squared_norm = 0;
-            double V_frobenius_squared_norm = 0;
-            for (int row = 0; row < M; row++) {
-                for (int col = 0; col < K; col++) {
-                    U_frobenius_squared_norm += U[row][col] * U[row][col];
-                }
+    if (reg != 0) {
+        double U_frobenius_squared_norm = 0.0;
+        double V_frobenius_squared_norm = 0.0;
+        for (int row = 0; row < M; row++) {
+            for (int col = 0; col < K; col++) {
+                U_frobenius_squared_norm += U[row][col] * U[row][col];
             }
-            for (int row = 0; row < N; row++) {
-                for (int col = 0; col < K; col++) {
-                    V_frobenius_squared_norm += V[row][col] * V[row][col];
-                }
-            }
-            err += 0.5 * reg * U_frobenius_squared_norm;
-            err += 0.5 * reg * V_frobenius_squared_norm;
         }
+        for (int row = 0; row < N; row++) {
+            for (int col = 0; col < K; col++) {
+                V_frobenius_squared_norm += V[row][col] * V[row][col];
+            }
+        }
+        err += 0.5 * reg * U_frobenius_squared_norm;
+        err += 0.5 * reg * V_frobenius_squared_norm;
+    }
+    if (err < 0) {
+    	cout << "ABORT ABORT ABORT ABORT ABORT" << endl;
     }
     return err / Y_length;
 }
@@ -177,7 +194,7 @@ double MatrixFactorization::get_err(double **U, double **V,
 
 void MatrixFactorization::train_model(int M, int N, int K, double eta,
         double reg, tuple<int, int, int> *Y, int Y_length,
-        double eps /* = 0.0001 */, int max_epochs /* = 300 */) {
+        double eps, int max_epochs) {
     cout << "Training model..." << endl;
     // Based off of CS 155 solutions
     this->M = M;
@@ -187,13 +204,13 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
     // and allows for indexing normally e.g. U[0][1] is row 0, col 1
     // Note that we store V^T, not V (i.e. N x K matrix, not K x N)
     // stackoverflow.com/questions/29375797/copy-2d-array-using-memcpy/29375830
-    U = new double*[M];
-    U[0] = new double[M * K];
+    U = new double *[M];
+    U[0] = new double [M * K];
     for (int i = 1; i < M; i++) {
         U[i] = U[i - 1] + K;
     }
-    V = new double*[N];
-    V[0] = new double[N * K];
+    V = new double *[N];
+    V[0] = new double [N * K];
     for (int j = 1; j < N; j++) {
         V[j] = V[j - 1] + K;
     }
@@ -216,7 +233,6 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
     }
 
     double delta;
-
     // Creates list of indices so we can shuffle them later
     // http://en.cppreference.com/w/cpp/algorithm/iota
     std::list<int> indices(Y_length);
@@ -225,6 +241,7 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
     for (int epoch = 0; epoch < max_epochs; epoch++) {
         cout << "Epoch: " << epoch << endl;
         double before_E_in = get_err(U, V, Y, Y_length, reg);
+
         std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
         std::iota(shuffled_indices.begin(),
                   shuffled_indices.end(), indices.begin());
@@ -241,7 +258,7 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             // so we simply set U[i - 1] to this value (instead of subtracting
             // the gradient)
             double *gradient_U = grad_U(U[i - 1], Yij, V[j - 1], reg, eta);
-            double *gradient_V = grad_V(V[j - 1], Yij, U[i - 1], reg, eta);
+            double *gradient_V = grad_V(U[i - 1], Yij, V[j - 1], reg, eta);
             for (int index = 0; index < K; index++) {
                 U[i - 1][index] = gradient_U[index];
                 V[j - 1][index] = gradient_V[index];
@@ -252,6 +269,7 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
         }
 
         // Check early stopping conditions
+        // Can be optimized because we are computing before_E_in twice at each loop
         double E_in = get_err(U, V, Y, Y_length, reg);
         if (epoch == 0) {
             delta = before_E_in - E_in;
@@ -278,13 +296,20 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
  */
 double MatrixFactorization::predictRating(int i, int j)
 {
-    if (! is_trained) {
+    if (!is_trained) {
         cout << "Model not trained yet!" << endl;
         return 0;
     }
     double rating = 0;
     for (int m = 0; m < K; m++) {
         rating += U[i - 1][m] * V[j - 1][m];
+    }
+    // Cap the ratings
+    if (rating < 1) {
+        rating = 1;
+    }
+    if (rating > 5) {
+        rating = 5;
     }
     return rating;
 }
@@ -363,13 +388,15 @@ int main(void)
 
     tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
     tuple<int, int, int> *Y_test = new tuple<int, int, int> [Y_test_size];
-    int M = 458293;
-    int N = 17770;
-    int K = 1000;
+
+    int M = 458293; // Number of users
+    int N = 17770; // Number of movies
+    int K = 10; // Number of factors
 
     Data data;
     tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
     tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
+
     for (int i = 0; i < Y_train_size; i++) {
         tuple<int, int, int, int> x = Y_train_original[i];
         Y_train[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
@@ -381,9 +408,12 @@ int main(void)
 
 
     double reg = 0.0;
-    double eta = 0.03;
+    double eta = 0.01;
+
     MatrixFactorization matfac;
-    matfac.train_model(M, N, K, eta, reg, Y_train, Y_train_size);
+    matfac.train_model(M, N, K, eta, reg, Y_train, Y_train_size, EPS, MAX_EPOCHS);
+    
+    // Get the errors
     double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
                                         Y_train, Y_train_size);
     double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
