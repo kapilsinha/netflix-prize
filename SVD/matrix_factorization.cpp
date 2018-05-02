@@ -24,9 +24,6 @@
 #define ARRAY_4_SIZE 1374739
 #define ARRAY_5_SIZE 2749898
 
-#define MAX_EPOCHS 200
-#define EPS 0.0001
-
 using namespace std;
 
 /**
@@ -341,105 +338,72 @@ void print_tuple(tuple<int, int, int> tup) {
  * Shouldn't be used ultimately (call methods in another file).
  * This is for testing purposes.
  */
-int main(void)
-{
-    // Set these variables - you can probably set the Y_train by calling
-    // the Data class and wrangling with it to remove the date and set the
-    // M, N, and K to the appropriate sizes (we can vary K)
-    //
-    // Arbitrarily chose set 3 and 5 as train and test sets
+// int main(void)
+// {    
+//     // Test 2 (legitimate test)
+//     int train_set = 2;
+//     int Y_train_size = ARRAY_2_SIZE;
+
+//     int test_set = 3;
+//     int Y_test_size = ARRAY_3_SIZE;
+
+//     tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
+//     tuple<int, int, int> *Y_test = new tuple<int, int, int> [Y_test_size];
+
+//     int M = 458293; // Number of users
+//     int N = 17770; // Number of movies
+//     int K = 20; // Number of factors
+
+//     Data data;
+//     tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
+//     tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
+
+//     for (int i = 0; i < Y_train_size; i++) {
+//         tuple<int, int, int, int> x = Y_train_original[i];
+//         Y_train[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
+//     }
+//     for (int i = 0; i < Y_test_size; i++) {
+//         tuple<int, int, int, int> x = Y_test_original[i];
+//         Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
+//     }
+
+
+//     double reg = 0.01;
+//     double eta = 0.01;
+
+//     MatrixFactorization matfac;
+//     matfac.train_model(M, N, K, eta, reg, Y_train, Y_train_size);
     
-    /*
-    // Test 1 (very fast and simple)
-    int M = 5;
-    int N = 9;
-    int K = 3;
-    int Y_train_size = 30;
-    int Y_test_size = 15;
-    tuple<int, int, int> Y_train[30] =
-    {make_tuple(1,1,3), make_tuple(1,2,4), make_tuple(1,3,5),
-     make_tuple(1,7,1), make_tuple(1,8,2), make_tuple(1,9,2),
-     make_tuple(2,4,2), make_tuple(2,5,3), make_tuple(2,6,4),
-     make_tuple(2,7,4), make_tuple(2,8,1), make_tuple(2,9,5),
-     make_tuple(3,1,1), make_tuple(3,2,1), make_tuple(3,3,4),
-     make_tuple(3,4,2), make_tuple(3,5,2), make_tuple(3,6,4),
-     make_tuple(4,1,1), make_tuple(4,2,1), make_tuple(4,3,4),
-     make_tuple(4,7,3), make_tuple(4,8,1), make_tuple(4,9,5),
-     make_tuple(5,4,1), make_tuple(5,5,2), make_tuple(5,6,2),
-     make_tuple(5,7,3), make_tuple(5,8,5), make_tuple(5,9,3)};
+//     // Get the errors
+//     double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
+//                                         Y_train, Y_train_size, reg);
+//     double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
+//                                        Y_test, Y_test_size, reg);
 
-    tuple<int, int, int> Y_test[15] =
-    {make_tuple(1,4,3), make_tuple(1,5,2), make_tuple(1,6,1),
-     make_tuple(2,1,4), make_tuple(2,2,2), make_tuple(2,3,2),
-     make_tuple(3,7,3), make_tuple(3,8,1), make_tuple(3,9,5),
-     make_tuple(4,4,2), make_tuple(4,5,2), make_tuple(4,6,4),
-     make_tuple(5,1,1), make_tuple(5,2,4), make_tuple(5,3,4)};
-    */
+//     // Add some more tests
+//     // (perhaps print out some values of U and V, errors, etc.)
+//     cout << "Some tests" << endl;
+//     cout << "Train error: " << train_error << endl;
+//     cout << "Test error: " << test_error << endl;
+//     cout << "\n" << endl;
+
+//     cout << "Training set predictions" << endl;
+//     for (int m = 0; m < 10; m++) {
+//         int i = get<0>(Y_train[m]);
+//         int j = get<1>(Y_train[m]);
+//         int Yij = get<2>(Y_train[m]);
+//         cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
+//         cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
+//     }
     
-    // Test 2 (legitimate test)
-    int train_set = 2;
-    int Y_train_size = ARRAY_2_SIZE;
-
-    int test_set = 3;
-    int Y_test_size = ARRAY_3_SIZE;
-
-    tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
-    tuple<int, int, int> *Y_test = new tuple<int, int, int> [Y_test_size];
-
-    int M = 458293; // Number of users
-    int N = 17770; // Number of movies
-    int K = 20; // Number of factors
-
-    Data data;
-    tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
-    tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
-
-    for (int i = 0; i < Y_train_size; i++) {
-        tuple<int, int, int, int> x = Y_train_original[i];
-        Y_train[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
-    }
-    for (int i = 0; i < Y_test_size; i++) {
-        tuple<int, int, int, int> x = Y_test_original[i];
-        Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
-    }
-
-
-    double reg = 0.01;
-    double eta = 0.01;
-
-    MatrixFactorization matfac;
-    matfac.train_model(M, N, K, eta, reg, Y_train, Y_train_size, EPS, MAX_EPOCHS);
-    
-    // Get the errors
-    double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                        Y_train, Y_train_size);
-    double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                       Y_test, Y_test_size);
-
-    // Add some more tests
-    // (perhaps print out some values of U and V, errors, etc.)
-    cout << "Some tests" << endl;
-    cout << "Train error: " << train_error << endl;
-    cout << "Test error: " << test_error << endl;
-    cout << "\n" << endl;
-
-    cout << "Training set predictions" << endl;
-    for (int m = 0; m < 10; m++) {
-        int i = get<0>(Y_train[m]);
-        int j = get<1>(Y_train[m]);
-        int Yij = get<2>(Y_train[m]);
-        cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
-        cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
-    }
-    
-    cout << "\n" << endl;
-    cout << "Test set predictions" << endl;
-    for (int m = 0; m < 10; m++) {
-        int i = get<0>(Y_test[m]);
-        int j = get<1>(Y_test[m]);
-        int Yij = get<2>(Y_test[m]);
-        cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
-        cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
-    }
-    return 0;
-}
+//     cout << "\n" << endl;
+//     cout << "Test set predictions" << endl;
+//     for (int m = 0; m < 10; m++) {
+//         int i = get<0>(Y_test[m]);
+//         int j = get<1>(Y_test[m]);
+//         int Yij = get<2>(Y_test[m]);
+//         cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
+//         cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
+//     }
+//     return 0;
+// }

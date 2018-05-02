@@ -29,11 +29,11 @@ public:
     MatrixFactorization(); // Constructor
     ~MatrixFactorization(); // Destructor
     double get_err(double **U, double **V, tuple<int, int, int> * Y,
-            int Y_length, double reg = 0.0);
+            int Y_length, double reg);
     // Trains model to generate U and V
     void train_model(int M, int N, int K, double eta, double reg,
             tuple<int, int, int> *Y, int Y_length, 
-            double eps, int max_epochs);
+            double eps = 0.0001, int max_epochs = 100);
     double predictRating(int i, int j);
     double **getU(); // Returns U
     // double *getUi(int row); // Returns U[row]
