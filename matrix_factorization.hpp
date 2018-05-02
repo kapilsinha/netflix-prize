@@ -21,6 +21,8 @@ private:
     int K;
     double **U;
     double **V;
+    double **bu ; 
+    double **bV; 
     bool is_trained = false; // whether model has been trained or not
                              // i.e. if U and V contain meaningful values
     double *grad_U(double *Ui, int Yij, double *Vj, double reg, double eta);

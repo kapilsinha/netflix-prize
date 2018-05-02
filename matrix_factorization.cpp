@@ -284,7 +284,8 @@ double MatrixFactorization::predictRating(int i, int j)
     }
     double rating = 0;
     for (int m = 0; m < K; m++) {
-        rating += U[i - 1][m] * V[j - 1][m];
+        rating += U[i - 1][m] * V[j - 1][m] ;
+        rating += b + bi[i] + bj[j]  /* bias */
     }
     return rating;
 }
