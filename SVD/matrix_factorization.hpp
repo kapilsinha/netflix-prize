@@ -21,12 +21,14 @@ private:
     int K;
     double **U;
     double **V;
-    double **bu ; 
-    double **bV; 
+    double *a;
+    double *b;
     bool is_trained = false; // whether model has been trained or not
                              // i.e. if U and V contain meaningful values
-    double *grad_U(double *Ui, int Yij, double *Vj, double reg, double eta);
-    double *grad_V(double *Vj, int Yij, double *Ui, double reg, double eta);
+    double *grad_U(double *Ui, int Yij, double *Vj, double reg, double eta, double ai, double bj);
+    double *grad_V(double *Vj, int Yij, double *Ui, double reg, double eta, double ai, double bj);
+    double *grad_A(double *Ui, int Yij, double *Vj, double reg, double eta, double ai, double bj);
+    double *grad_B(double *Ui, int Yij, double *Vj, double reg, double eta, double ai, double bj);
 public:
     MatrixFactorization(); // Constructor
     ~MatrixFactorization(); // Destructor
