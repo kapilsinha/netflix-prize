@@ -32,8 +32,8 @@ private:
 public:
     MatrixFactorization(); // Constructor
     ~MatrixFactorization(); // Destructor
-    double get_err(double **U, double **V, tuple<int, int, int> * Y,
-            int Y_length, double reg);
+    double get_err(double **U, double **V, tuple<int, int, int> *Y,
+            int Y_length, double reg, double *a, double *b);
     // Trains model to generate U and V
     void train_model(int M, int N, int K, double eta, double reg,
             tuple<int, int, int> *Y, int Y_length, 
@@ -43,4 +43,6 @@ public:
     // double *getUi(int row); // Returns U[row]
     double **getV(); // Returns V
     // double *getVj(int row); // Returns V[row]
+    double *getA(); // Returns a
+    double *getB(); // Returns b
 };
