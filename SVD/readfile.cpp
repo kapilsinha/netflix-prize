@@ -38,8 +38,8 @@ Data::Data(void)
     int array_4_index = 0;
     int array_5_index = 0;
 
-    ifstream infile("mu/all.dta");
-    ifstream idxfile("mu/all.idx");
+    ifstream infile("../mu/all.dta");
+    ifstream idxfile("../mu/all.idx");
 
     while (!infile.eof() & !idxfile.eof() ) {
         int user, movie, date, rating;
@@ -94,7 +94,7 @@ Data::~Data()
 }
 
 /**
- * @brief Returns array based on the parameter index (1, 2, 3, 4, 5)
+ * @brief Returns array based on the parameter index (1, 2, 3, 4)
  *        Else throws error
  * Array 1 - base
  * Array 2 - valid
@@ -138,44 +138,44 @@ void print_tuple(tuple<int, int, int, int> tup) {
  * Shouldn't be used ultimately (call methods in another file).
  * This is for testing purposes.
  */
+/*
+int main(void)
+{
+    Data data;
+    cout << "Some checks" << endl;
+    cout << "Array 1 element 0: ";
+    print_tuple (data.getArray(1)[0]);
+    cout << "Array 2 element 0: ";
+    print_tuple (data.getArray(2)[0]);
+    cout << "Array 3 element 0: ";
+    print_tuple (data.getArray(3)[0]);
+    cout << "Array 4 element 0: ";
+    print_tuple (data.getArray(4)[0]);
+    cout << "Array 5 element 0: ";
+    print_tuple (data.getArray(5)[0]);
 
-// int main(void)
-// {
-//     Data data;
-//     cout << "Some checks" << endl;
-//     cout << "Array 1 element 0: ";
-//     print_tuple (data.getArray(1)[0]);
-//     cout << "Array 2 element 0: ";
-//     print_tuple (data.getArray(2)[0]);
-//     cout << "Array 3 element 0: ";
-//     print_tuple (data.getArray(3)[0]);
-//     cout << "Array 4 element 0: ";
-//     print_tuple (data.getArray(4)[0]);
-//     cout << "Array 5 element 0: ";
-//     print_tuple (data.getArray(5)[0]);
+    cout << "Array 1 last element: ";
+    print_tuple (data.getArray(1)[ARRAY_1_SIZE - 1]);
+    cout << "Array 2 last element: ";
+    print_tuple (data.getArray(2)[ARRAY_2_SIZE - 1]);
+    cout << "Array 3 last element: ";
+    print_tuple (data.getArray(3)[ARRAY_3_SIZE - 1]);
+    cout << "Array 4 last element: ";
+    print_tuple (data.getArray(4)[ARRAY_4_SIZE - 1]);
+    cout << "Array 5 last element: ";
+    print_tuple (data.getArray(5)[ARR5_SIZE - 1]);
 
-//     cout << "Array 1 last element: ";
-//     print_tuple (data.getArray(1)[ARRAY_1_SIZE - 1]);
-//     cout << "Array 2 last element: ";
-//     print_tuple (data.getArray(2)[ARRAY_2_SIZE - 1]);
-//     cout << "Array 3 last element: ";
-//     print_tuple (data.getArray(3)[ARRAY_3_SIZE - 1]);
-//     cout << "Array 4 last element: ";
-//     print_tuple (data.getArray(4)[ARRAY_4_SIZE - 1]);
-//     cout << "Array 5 last element: ";
-//     print_tuple (data.getArray(5)[ARRAY_5_SIZE - 1]);
+    cout << "Array 1 garbage: ";
+    print_tuple (data.getArray(1)[ARRAY_1_SIZE]);
+    cout << "Array 2 garbage: ";
+    print_tuple (data.getArray(2)[ARRAY_2_SIZE]);
+    cout << "Array 3 garbage: ";
+    print_tuple (data.getArray(3)[ARRAY_3_SIZE]);
+    cout << "Array 4 garbage: ";
+    print_tuple (data.getArray(4)[ARRAY_4_SIZE]);
+    cout << "Array 5 garbage: ";
+    print_tuple (data.getArray(5)[ARRAY_5_SIZE]);
 
-//     cout << "Array 1 garbage: ";
-//     print_tuple (data.getArray(1)[ARRAY_1_SIZE]);
-//     cout << "Array 2 garbage: ";
-//     print_tuple (data.getArray(2)[ARRAY_2_SIZE]);
-//     cout << "Array 3 garbage: ";
-//     print_tuple (data.getArray(3)[ARRAY_3_SIZE]);
-//     cout << "Array 4 garbage: ";
-//     print_tuple (data.getArray(4)[ARRAY_4_SIZE]);
-//     cout << "Array 5 garbage: ";
-//     print_tuple (data.getArray(5)[ARRAY_5_SIZE]);
-
-//     return 0;
-// }
-
+    return 0;
+}
+*/

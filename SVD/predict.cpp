@@ -17,8 +17,10 @@
 #define N 17770 // Number of movies
 #define K 20 // Number of factors 
 
-#define REG 0.01 // Regularization
+#define REG 0.05 // Regularization
 #define ETA 0.01 // Learning rate
+#define MAX_EPOCHS 200
+#define EPS 0.001 // 0.0001
 
 using namespace std;
 
@@ -48,9 +50,9 @@ MatrixFactorization run_model(void) {
         Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
     }
 
-
     MatrixFactorization matfac;
-    matfac.train_model(M, N, K, ETA, REG, Y_train, Y_train_size);
+    matfac.train_model(M, N, K, ETA, REG, Y_train, Y_train_size,
+                       EPS, MAX_EPOCHS);
     
     // Get the errors
     double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
