@@ -263,7 +263,6 @@ double MatrixFactorization::get_err(double **U, double **V,
  *       eps times the decrease in MSE after the first epoch, we stop training
  * max_epochs : maximum number of epochs for training
  */
-
 void MatrixFactorization::train_model(int M, int N, int K, double eta,
         double reg, tuple<int, int, int> *Y, int Y_length,
         double eps, int max_epochs) {
@@ -347,6 +346,8 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             // Note: the gradient function actually returns U[i - 1] - gradient
             // so we simply set U[i - 1] to this value (instead of subtracting
             // the gradient)
+
+            // ALL OF THE FOLLOWING GRADIENTS NEED TO BE PUT INTO ONE FUNCTION - KARTHIK
             double *gradient_U = grad_U(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1], b[j - 1]);
             // DON'T SCREW UP THE BELOW BY SWITCHING U AND V!!!
             double *gradient_V = grad_V(V[j - 1], Yij, U[i - 1], reg, eta, a[i - 1], b[j - 1]);
