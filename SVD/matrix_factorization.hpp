@@ -10,6 +10,7 @@
 #include <tuple>
 #include <array> // thin wrapper over bracket syntax (int [])
 #include "readfile.hpp"
+#include "ProgressBar.hpp"
 
 using namespace std;
 

@@ -15,9 +15,9 @@
 
 #define M 458293 // Number of users
 #define N 17770 // Number of movies
-#define K 20 // Number of factors 
+#define K 10 // Number of factors 
 
-#define REG 0.05 // Regularization
+#define REG 0.00 // Regularization
 #define ETA 0.01 // Learning rate
 #define MAX_EPOCHS 200
 #define EPS 0.001 // 0.0001

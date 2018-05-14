@@ -244,7 +244,7 @@ double MatrixFactorization::get_err(double **U, double **V,
         err += 0.5 * reg * a_frobenius_squared_norm;
         err += 0.5 * reg * b_frobenius_squared_norm;
     }
-    cout << "err " << err << endl;
+
     if (err < 0) {
         cout << "ABORT: error below zero" << endl;
     }
@@ -322,8 +322,11 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
     std::list<int> indices(Y_length);
     std::iota(indices.begin(), indices.end(), 0);
 
+
     for (int epoch = 0; epoch < max_epochs; epoch++) {
         cout << "Epoch: " << epoch << endl;
+        // Progress Bar
+        ProgressBar progressBar(Y_length, 100);
         double before_E_in = get_err(U, V, Y, Y_length, reg, a, b);
 
         std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
@@ -337,6 +340,8 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             int i = get<0>(Y[*ind]);
             int j = get<1>(Y[*ind]);
             int Yij = get<2>(Y[*ind]);
+            ++progressBar;
+            progressBar.display();
 
             // Update the row of U using the gradient
             // Note: the gradient function actually returns U[i - 1] - gradient
@@ -346,7 +351,6 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             // DON'T SCREW UP THE BELOW BY SWITCHING U AND V!!!
             double *gradient_V = grad_V(V[j - 1], Yij, U[i - 1], reg, eta, a[i - 1], b[j - 1]);
 
-            // 
             double *gradient_A = grad_A(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1], b[j - 1]);
             double *gradient_B = grad_B(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1] , b[j - 1]);
 
@@ -370,10 +374,9 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             delete[] gradient_A;
             delete[] gradient_B;
         }
+        progressBar.done();
 
         // Check early stopping conditions
-        // Can be optimized because we are computing before_E_in twice at each loop
-        // ^^ not sure what you mean...
         double E_in = get_err(U, V, Y, Y_length, reg, a, b);
         if (epoch == 0) {
             delta = before_E_in - E_in;
