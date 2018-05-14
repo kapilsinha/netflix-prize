@@ -38,8 +38,8 @@ Data::Data(void)
     int array_4_index = 0;
     int array_5_index = 0;
 
-    ifstream infile("../mu/all.dta");
-    ifstream idxfile("../mu/all.idx");
+    ifstream infile("mu/all.dta");
+    ifstream idxfile("mu/all.idx");
 
     while (!infile.eof() & !idxfile.eof() ) {
         int user, movie, date, rating;

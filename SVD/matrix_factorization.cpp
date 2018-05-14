@@ -79,7 +79,7 @@ MatrixFactorization::~MatrixFactorization()
  * @return gradient * eta
  */
 double *MatrixFactorization::grad_U(double *Ui, int Yij,
-                        double *Vj, double reg, double eta)
+                        double *Vj, double reg, double eta, double ai, double bj)
 {
     double *gradient = new double [K];
     double dot_product = 0.0;
@@ -88,9 +88,10 @@ double *MatrixFactorization::grad_U(double *Ui, int Yij,
         dot_product += Ui[i] * Vj[i];
     }
     // Compute the gradient
+    // MULTIPLIED BY 2
     for (int m = 0; m < K; m++) {
         gradient[m] = (1 - reg * eta) * Ui[m]
-                   + eta * Vj[m] * (Yij - dot_product);
+                   + eta * Vj[m] * 2 * (Yij - dot_product - ai - bj);
     }
     return gradient;
 }
@@ -109,7 +110,7 @@ double *MatrixFactorization::grad_U(double *Ui, int Yij,
  * @return gradient * eta
  */
 double *MatrixFactorization::grad_V(double *Vj, int Yij,
-                        double *Ui, double reg, double eta)
+                        double *Ui, double reg, double eta, double ai, double bj)
 {
     double *gradient = new double [K];
     double dot_product = 0.0;
@@ -118,9 +119,69 @@ double *MatrixFactorization::grad_V(double *Vj, int Yij,
         dot_product += Ui[i] * Vj[i];
     }
     // Compute the gradient
+    // MULTIPLIED BY 2
     for (int m = 0; m < K; m++) {
         gradient[m] = (1 - reg * eta) * Vj[m]
-                   + eta * Ui[m] * (Yij - dot_product);
+                   + eta * Ui[m] * 2 * (Yij - dot_product - ai - bj);
+    }
+    return gradient;
+}
+/**
+ * @brief Computes gradient of regularized loss function with respect to Ui
+ * multiplied by eta
+ *
+ * @param
+ * Ui : ith row of U
+ * Yij : training point
+ * Vj : jth column of V^T (jth row of V)
+ * reg : regularization parameter lambda
+ * eta : learning rate
+ *
+ * @return gradient * eta
+ */
+double *MatrixFactorization::grad_A(double *Ui, int Yij,
+                        double *Vj, double reg, double eta, double ai, double bj)
+{
+    double *gradient = new double [M];
+    double dot_product = 0.0;
+    // Compute the dot product
+    for (int i = 0; i < K; i++) {
+        dot_product += Ui[i] * Vj[i];
+    }
+    // Compute the gradient
+    for (int m = 0; m < M; m++) {
+        gradient[m] = (1 - reg * eta) * ai
+                   + eta * 2 * (Yij - dot_product - ai - bj);
+    }
+    return gradient;
+}
+
+/**
+ * @brief Computes gradient of regularized loss function with respect to B
+ * multiplied by eta
+ *
+ * @param
+ * Vj : jth column of V^T (jth row of V)
+ * Yij : training point
+ * Ui : ith row of U
+ * reg : regularization parameter lambda
+ * eta : learning rate
+ *
+ * @return gradient * eta
+ */
+double *MatrixFactorization::grad_B(double *Ui, int Yij,
+                        double *Vj, double reg, double eta, double ai, double bj)
+{
+    double *gradient = new double [N];
+    double dot_product = 0.0;
+    // Compute the dot product
+    for (int i = 0; i < K; i++) {
+        dot_product += Ui[i] * Vj[i];
+    }
+    // Compute the gradient
+    for (int m = 0; m < N; m++) {
+        gradient[m] = (1 - reg * eta) * bj
+                   + eta * 2 * (Yij - dot_product - ai - bj);
     }
     return gradient;
 }
@@ -140,7 +201,7 @@ double *MatrixFactorization::grad_V(double *Vj, int Yij,
  * @return error (MSE)
  */
 double MatrixFactorization::get_err(double **U, double **V,
-        tuple<int, int, int> *Y, int Y_length, double reg)
+        tuple<int, int, int> *Y, int Y_length, double reg, double *a, double *b)
 {
     // Based off of CS 155 solutions (check it)
     double err = 0.0;
@@ -153,12 +214,15 @@ double MatrixFactorization::get_err(double **U, double **V,
         for (int n = 0; n < K; n++) {
             dot_product += U[i - 1][n] * V[j - 1][n];
         }
-        err += 0.5 * (Yij - dot_product) * (Yij - dot_product);
+        // cout << "ai " << a[i] << "  bj " << b[j] << endl;
+        err += 0.5 * (Yij - dot_product - a[i] - b[j]) * (Yij - dot_product - a[i] - b[j]);
     }
 
     if (reg != 0) {
         double U_frobenius_squared_norm = 0.0;
         double V_frobenius_squared_norm = 0.0;
+        double a_frobenius_squared_norm = 0.0;
+        double b_frobenius_squared_norm = 0.0;
         for (int row = 0; row < M; row++) {
             for (int col = 0; col < K; col++) {
                 U_frobenius_squared_norm += U[row][col] * U[row][col];
@@ -169,9 +233,18 @@ double MatrixFactorization::get_err(double **U, double **V,
                 V_frobenius_squared_norm += V[row][col] * V[row][col];
             }
         }
+        for (int i = 0; i < M; i++) {
+            a_frobenius_squared_norm += a[i] * a[i];
+        }
+        for (int j = 0; j < N; j++) {
+            b_frobenius_squared_norm += b[j] * b[j];
+        }
         err += 0.5 * reg * U_frobenius_squared_norm;
         err += 0.5 * reg * V_frobenius_squared_norm;
+        err += 0.5 * reg * a_frobenius_squared_norm;
+        err += 0.5 * reg * b_frobenius_squared_norm;
     }
+    cout << "err " << err << endl;
     if (err < 0) {
         cout << "ABORT: error below zero" << endl;
     }
@@ -231,6 +304,18 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
         }
     }
 
+    //Bias stuff 
+    a = new double [M];
+    b = new double [N];
+    // Initialize the values of a to be uniform between -0.5 and 0.5
+    for (int i = 0; i < M; i++) {
+          a[i] = dist(gen);
+    }
+      // Initialize the values of  b to be uniform between -0.5 and 0.5
+    for (int i = 0; i < N; i++) {
+        b[i] = dist(gen);
+    }
+
     double delta;
     // Creates list of indices so we can shuffle them later
     // http://en.cppreference.com/w/cpp/algorithm/iota
@@ -239,13 +324,14 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
 
     for (int epoch = 0; epoch < max_epochs; epoch++) {
         cout << "Epoch: " << epoch << endl;
-        double before_E_in = get_err(U, V, Y, Y_length, reg);
+        double before_E_in = get_err(U, V, Y, Y_length, reg, a, b);
 
         std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
         std::iota(shuffled_indices.begin(),
                   shuffled_indices.end(), indices.begin());
         std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), gen);
 
+        //cout << "A" << endl; 
         // auto requires C++11
         for (auto ind: shuffled_indices) {
             int i = get<0>(Y[*ind]);
@@ -256,26 +342,45 @@ void MatrixFactorization::train_model(int M, int N, int K, double eta,
             // Note: the gradient function actually returns U[i - 1] - gradient
             // so we simply set U[i - 1] to this value (instead of subtracting
             // the gradient)
-            double *gradient_U = grad_U(U[i - 1], Yij, V[j - 1], reg, eta);
+            double *gradient_U = grad_U(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1], b[j - 1]);
             // DON'T SCREW UP THE BELOW BY SWITCHING U AND V!!!
-            double *gradient_V = grad_V(V[j - 1], Yij, U[i - 1], reg, eta);
+            double *gradient_V = grad_V(V[j - 1], Yij, U[i - 1], reg, eta, a[i - 1], b[j - 1]);
+
+            // 
+            double *gradient_A = grad_A(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1], b[j - 1]);
+            double *gradient_B = grad_B(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1] , b[j - 1]);
+
+            //cout << "B i: " << i << "    j: " << j <<  "   M: "<< M<<"   N:  "<< N << endl; 
             for (int index = 0; index < K; index++) {
                 U[i - 1][index] = gradient_U[index];
                 V[j - 1][index] = gradient_V[index];
             }
+
+            for (int l = 0; l < M; l++) {
+                a[l] = gradient_A[l];
+            }
+
+            for (int l = 0; l < N; l++) {
+                b[l] = gradient_B[l];
+            }
+
             // Freeing the dynamically allocated gradient
             delete[] gradient_U;
             delete[] gradient_V;
+            delete[] gradient_A;
+            delete[] gradient_B;
         }
 
         // Check early stopping conditions
         // Can be optimized because we are computing before_E_in twice at each loop
         // ^^ not sure what you mean...
-        double E_in = get_err(U, V, Y, Y_length, reg);
+        double E_in = get_err(U, V, Y, Y_length, reg, a, b);
         if (epoch == 0) {
             delta = before_E_in - E_in;
         }
         else if (before_E_in - E_in < eps * delta) {
+            cout << "eps" << eps;
+            cout<< "delta" << delta;
             cout << "Error: " << E_in;
             cout << ", Delta error: " << (before_E_in - E_in);
             cout << ", Threshold delta error: " << (eps * delta) << endl;
@@ -305,7 +410,7 @@ double MatrixFactorization::predictRating(int i, int j)
     }
     double rating = 0;
     for (int m = 0; m < K; m++) {
-        rating += U[i - 1][m] * V[j - 1][m];
+        rating += U[i - 1][m] * V[j - 1][m] + a[i - 1] + b[j - 1];
     }
     // Cap the ratings
     if (rating < 1) {
@@ -333,6 +438,25 @@ double **MatrixFactorization::getU()
 double **MatrixFactorization::getV()
 {
     return V;
+}
+
+
+/**
+ * @brief Returns A array 
+ * @return A
+ */
+double *MatrixFactorization::getA()
+{
+    return a;
+}
+
+/**
+ * @brief Returns B array 
+ * @return B
+ */
+double *MatrixFactorization::getB()
+{
+    return b;
 }
 
 /**
@@ -386,9 +510,9 @@ int main(void)
     
     // Get the errors
     double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                        Y_train, Y_train_size);
+                                        Y_train, Y_train_size, reg);
     double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                       Y_test, Y_test_size);
+                                       Y_test, Y_test_size, reg);
 
     // Add some more tests
     // (perhaps print out some values of U and V, errors, etc.)
@@ -453,9 +577,9 @@ int main2(void)
     
     // Get the errors
     double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                        Y_train, Y_train_size);
+                                        Y_train, Y_train_size, reg);
     double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                       Y_test, Y_test_size);
+                                       Y_test, Y_test_size, reg);
 
     // Add some more tests
     // (perhaps print out some values of U and V, errors, etc.)
@@ -485,3 +609,4 @@ int main2(void)
     return 0;
 }
 */
+

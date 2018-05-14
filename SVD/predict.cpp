@@ -25,12 +25,13 @@
 using namespace std;
 
 /* Run the model. */
-MatrixFactorization run_model(void) {
+MatrixFactorization *run_model(void) {
+
     // Set train and test set
-    int train_set = 1; // Training set
-    int Y_train_size = ARRAY_1_SIZE;
-    int test_set = 2; // Validation set
-    int Y_test_size = ARRAY_2_SIZE;
+    int train_set = 2; // Training set
+    int Y_train_size = ARRAY_2_SIZE;
+    int test_set = 3; // Validation set
+    int Y_test_size = ARRAY_3_SIZE;
 
     // Initialization
     tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
@@ -50,15 +51,15 @@ MatrixFactorization run_model(void) {
         Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
     }
 
-    MatrixFactorization matfac;
-    matfac.train_model(M, N, K, ETA, REG, Y_train, Y_train_size,
+    MatrixFactorization *matfac = new MatrixFactorization();
+    matfac->train_model(M, N, K, ETA, REG, Y_train, Y_train_size,
                        EPS, MAX_EPOCHS);
     
     // Get the errors
-    double train_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                        Y_train, Y_train_size, REG);
-    double test_error = matfac.get_err(matfac.getU(), matfac.getV(),
-                                       Y_test, Y_test_size, REG);
+    double train_error = matfac->get_err(matfac->getU(), matfac->getV(),
+                                        Y_train, Y_train_size, REG, matfac->getA(), matfac->getB());
+    double test_error = matfac->get_err(matfac->getU(), matfac->getV(),
+                                       Y_test, Y_test_size, REG,  matfac->getA(), matfac->getB());
 
     cout << "Train error: " << train_error << endl;
     cout << "Test error: " << test_error << endl;
@@ -70,7 +71,7 @@ MatrixFactorization run_model(void) {
         int j = get<1>(Y_train[m]);
         int Yij = get<2>(Y_train[m]);
         cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
-        cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
+        cout << "Predicted value: " << matfac->predictRating(i, j) << endl;
     }
     
     cout << "\n" << endl;
@@ -80,13 +81,13 @@ MatrixFactorization run_model(void) {
         int j = get<1>(Y_test[m]);
         int Yij = get<2>(Y_test[m]);
         cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
-        cout << "Predicted value: " << matfac.predictRating(i, j) << endl;
+        cout << "Predicted value: " << matfac->predictRating(i, j) << endl;
     }
 
     return matfac;
 }
 
-void write_preds(MatrixFactorization model) {
+void write_preds(MatrixFactorization *model) {
     ofstream file ("SVD_predictions.txt");
     if (file.is_open()) {
         Data data;
@@ -94,7 +95,7 @@ void write_preds(MatrixFactorization model) {
         for (int point = 0; point < ARRAY_5_SIZE; point++) {
             int i = get<0>(qual[point]);
             int j = get<1>(qual[point]);
-            file << model.predictRating(i, j) << "\n";
+            file << model->predictRating(i, j) << "\n";
         }
         file.close();
     }
@@ -106,7 +107,7 @@ void write_preds(MatrixFactorization model) {
 int main(void)
 {   
     cout << "Running the model..." << endl;
-    MatrixFactorization model = run_model();
+    MatrixFactorization *model = run_model();
     cout << "Writing the predictions..." << endl;
     write_preds(model);
     return 0;

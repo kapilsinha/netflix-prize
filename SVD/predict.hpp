@@ -21,5 +21,5 @@ using namespace std;
 
 #include "matrix_factorization.hpp"
 
-MatrixFactorization run_model(void);
-void write_preds(MatrixFactorization model);
+MatrixFactorization *run_model(void);
+void write_preds(MatrixFactorization *model);
