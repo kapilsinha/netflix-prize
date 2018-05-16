@@ -8,10 +8,11 @@
 
 #include <string>
 #include <tuple>
+#include <vector>
 
 using namespace std;
 
-class Data 
+class Data
 {
 private:
     tuple<int, int, int, int> *array_1;
@@ -19,9 +20,12 @@ private:
     tuple<int, int, int, int> *array_3;
     tuple<int, int, int, int> *array_4;
     tuple<int, int, int> *array_5;
+    vector<tuple<int, int, int>> *get_user_data(tuple<int, int, int, int> *arr, int size);
+
 public:
     Data(); // Constructor
     ~Data(); // Destructor
     tuple<int, int, int, int> *getArray(int idx); // Returns array_idx
     tuple<int, int, int> *getQual();
+    vector<tuple<int, int, int>> *format_user_data(int idx);
 };
