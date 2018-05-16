@@ -191,6 +191,37 @@ double *SVDPlusPlus::grad_B(double *Ui, int Yij,
 }
 
 /**
+ * @brief Computes gradient of user factor function
+ *
+ * @param
+ * Vj : jth column of V^T (jth row of V)
+ * Yij : training point
+ * Ui : ith row of U
+ * reg : regularization parameter lambda
+ * eta : learning rate
+ *
+ * @return gradient * eta
+ */
+double *SVDPlusPlus::grad_y(double *Ui, int Yij,
+                        double *Vj, double reg, double eta, double ai, double bj):
+{
+    // What's the size of the y factor thing? Is it like the number of users
+    // or the number of movies?
+    double *gradient = new double [N];
+    double dot_product = 0.0;
+    // Compute the dot product
+    for (int i = 0; i < K; i++) {
+        dot_product += Ui[i] * Vj[i];
+    }
+    // Compute the gradient
+    for (int m = 0; m < N; m++) {
+        gradient[m] = (1 - reg * eta) * bj
+                   + eta * 2 * (Yij - dot_product - ai - bj);
+    }
+    return gradient;
+}
+
+/**
  * @brief Computes mean regularized squared-error of predictions made by
  * estimating Y[i][j] as the dot product of U[i] and V[j]
  *

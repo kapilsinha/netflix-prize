@@ -30,6 +30,7 @@ private:
     double *grad_V(double *Vj, int Yij, double *Ui, double reg, double eta, double ai, double bj);
     double *grad_A(double *Ui, int Yij, double *Vj, double reg, double eta, double ai, double bj);
     double *grad_B(double *Ui, int Yij, double *Vj, double reg, double eta, double ai, double bj);
+    double *grad_y(double *Ui, int Yij,double *Vj, double reg, double eta, double ai, double bj);
 public:
     SVDPlusPlus(); // Constructor
     ~SVDPlusPlus(); // Destructor
