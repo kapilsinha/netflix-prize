@@ -26,7 +26,6 @@ using namespace std;
 
 /* Run the model. */
 SVDPlusPlus *run_model(void) {
-
     // Set train and test set
     int train_set = 2; // Training set
     int Y_train_size = ARRAY_2_SIZE;
@@ -40,7 +39,7 @@ SVDPlusPlus *run_model(void) {
     Data data;
     tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
     tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
-
+    
     // Get rid of the dates
     for (int i = 0; i < Y_train_size; i++) {
         tuple<int, int, int, int> x = Y_train_original[i];
@@ -51,15 +50,22 @@ SVDPlusPlus *run_model(void) {
         Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
     }
 
+    // Initialization
+    vector<tuple<int, int, int>> *train_ratings_info = new vector<tuple<int, int, int>> [M];
+    vector<tuple<int, int, int>> *test_ratings_info = new vector<tuple<int, int, int>> [M];
+    
+    train_ratings_info = data.format_user_data(train_set);
+    test_ratings_info = data.format_user_data(test_set);
+    
+
     SVDPlusPlus *matfac = new SVDPlusPlus();
-    matfac->train_model(M, N, K, ETA, REG, Y_train, Y_train_size,
-                       EPS, MAX_EPOCHS);
+    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, EPS, MAX_EPOCHS);
 
     // Get the errors
     double train_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                                        Y_train, Y_train_size, REG, matfac->getA(), matfac->getB());
+                                        train_ratings_info, REG, matfac->getA(), matfac->getB());
     double test_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                                       Y_test, Y_test_size, REG,  matfac->getA(), matfac->getB());
+                                       test_ratings_info, REG,  matfac->getA(), matfac->getB());
 
     cout << "Train error: " << train_error << endl;
     cout << "Test error: " << test_error << endl;

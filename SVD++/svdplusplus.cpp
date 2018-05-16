@@ -22,14 +22,15 @@
 #define ARRAY_3_SIZE 1964391
 #define ARRAY_4_SIZE 1374739
 #define ARRAY_5_SIZE 2749898
+#define NUM_USERS 458293
 
 #define MAX_EPOCHS 200
 #define EPS 0.001 // 0.0001
 
 using namespace std;
 
-// Let mu be the overall mean rating --> NEED TO CALCULATE THIS LATER
-const double mu = 3.60073;
+// Let mu be the overall mean rating
+const double mu = 3.6;
 
 
 /**
@@ -70,156 +71,109 @@ SVDPlusPlus::~SVDPlusPlus()
 }
 
 /**
- * @brief Computes gradient of regularized loss function with respect to Ui
- * multiplied by eta
+ * @brief Computes and updates all of the gradients
  *
  * @param
- * Ui : ith row of U
- * Yij : training point
- * Vj : jth column of V^T (jth row of V)
+ * i : user
+ * j : movie
+ * rating : rating
  * reg : regularization parameter lambda
  * eta : learning rate
+ * ratings_info : array of vector of tuples where i^th vector corresponds to ratings
+ *              of i^th user
  *
  * @return gradient * eta
  */
-double *SVDPlusPlus::grad_U(double *Ui, int Yij,
-                        double *Vj, double reg, double eta, double ai, double bj)
+void SVDPlusPlus::Train(double reg, double eta)
 {
-    double *gradient = new double [K];
-    double dot_product = 0.0;
-    // Compute the dot product
-    for (int i = 0; i < K; i++) {
-        dot_product += Ui[i] * Vj[i];
+    cout << "TRAIN" << endl;
+    ProgressBar progressBar(M, 100);
+    int userId, itemId, rating;
+    // THIS IS NOT STOCHASTIC GRADIENT DESCENT ?????
+    for (userId = 0; userId < M; userId++) {
+        ++progressBar;
+        progressBar.display();
+        // Number of ratings for this user
+        int num_ratings = ratings_info[userId].size();
+        double sqrtNum = 0;
+        if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
+        // tmpSum stores array of errors for each k?
+        vector <double> tmpSum(K, 0);
+
+        // populating sumMW (Line 90)
+        // WHAT IS SUMMW ?????????? - KARTHIK
+        // MAKE SURE k < K IS FINE - KARTHIK
+        for (int k = 0; k < K; k++) {
+            double sumy = 0;
+            for (int i = 0; i < num_ratings; ++i) {
+                int itemI = get<0>(ratings_info[userId][i]);
+                sumy += y[itemI][k];
+            }
+            sumMW[userId][k] = sumy;
+        }
+
+        // Loop over all movies rated by this userId (Line 98)
+        for (int i = 0; i < num_ratings; i++) {
+            // DOUBLE CHECK THE INDICES - KARTHIK
+            itemId = get<0>(ratings_info[userId][i]);
+            rating = get<2>(ratings_info[userId][i]);
+            double predict = predictRating(userId, itemId);
+            double error = rating - predict;
+            // Subtract 1 because of indexing
+            userId -= 1;
+            itemId -= 1;
+            // Update biases using gradients (Line 103)
+            a[userId] += eta * (error - reg * a[userId]);
+            b[itemId] += eta * (error - reg * b[itemId]);
+
+            // Update U and V using gradients (Line 106)
+            for (int k = 0; k < K; k++) {
+                auto uf = U[userId][k];
+                auto mf = V[itemId][k];
+                // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
+                U[userId][k] += eta * (error * mf - 0.015 * uf);
+                V[itemId][k] += eta * (error * (uf + sqrtNum * sumMW[userId][k]) - 0.015 * mf);
+                tmpSum[k] += error * sqrtNum * mf; 
+            }
+        }
+
+        // Update sumMW and y (Line 114)
+        // MAYBE PUT THIS IN THE LOOP ABOVE???
+        // COMPLETELY UNCLEAR ON THE LOGIC HERE OR WTF IS GOING SOMEBODY PLS EXPLAIN - KARTHIK 
+        // ????????????????????????????????????????????????????????????????????????????????
+        for (int j = 0; j < num_ratings; ++j) {
+            itemId = get<0>(ratings_info[userId][j]);
+            for (int k = 0; k < K; k++) {
+                double tmpMW = y[itemId][k];
+                // WHY THE FUCK IS THERE A 0.015 HERE ?????????? - KARTHIK
+                y[itemId][k] += eta * (tmpSum[k] - 0.015 * tmpMW);
+                sumMW[userId][k] += y[itemId][k] - tmpMW;
+            }
+        }
     }
-    // Compute the gradient
-    // MULTIPLIED BY 2
-    for (int m = 0; m < K; m++) {
-        gradient[m] = (1 - reg * eta) * Ui[m]
-                   + eta * Vj[m] * 2 * (Yij - dot_product - ai - bj);
+
+    // NO FUCKING CLUE WHAT THIS IS EITHER - KARTHIK (Line 123)
+    for (userId = 0; userId < M; userId++) {
+        int num_ratings = ratings_info[userId].size();
+        double sqrtNum = 0;
+        if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
+        // LITERALLY NO IDEA WHAT ALL OF THIS IS ????????????
+        for (int k = 0; k < K; k++) {
+            double sumy = 0;
+            for (int i = 0; i < num_ratings; i++) {
+                int itemI = get<0>(ratings_info[userId][i]);
+                sumy += y[itemI][k];
+            }
+            sumMW[userId][k] = sumy;
+        }
+
     }
-    return gradient;
+    progressBar.done();
+    // THESE GUYS UPDATE LEARNING RATE HERE IDK IF WE WANNA DO THAT
+    return;
 }
 
-/**
- * @brief Computes gradient of regularized loss function with respect to Vj
- * multiplied by eta
- *
- * @param
- * Vj : jth column of V^T (jth row of V)
- * Yij : training point
- * Ui : ith row of U
- * reg : regularization parameter lambda
- * eta : learning rate
- *
- * @return gradient * eta
- */
-double *SVDPlusPlus::grad_V(double *Vj, int Yij,
-                        double *Ui, double reg, double eta, double ai, double bj)
-{
-    double *gradient = new double [K];
-    double dot_product = 0.0;
-    // Compute the dot product
-    for (int i = 0; i < K; i++) {
-        dot_product += Ui[i] * Vj[i];
-    }
-    // Compute the gradient
-    // MULTIPLIED BY 2
-    for (int m = 0; m < K; m++) {
-        gradient[m] = (1 - reg * eta) * Vj[m]
-                   + eta * Ui[m] * 2 * (Yij - dot_product - ai - bj);
-    }
-    return gradient;
-}
-/**
- * @brief Computes gradient of regularized loss function with respect to Ui
- * multiplied by eta
- *
- * @param
- * Ui : ith row of U
- * Yij : training point
- * Vj : jth column of V^T (jth row of V)
- * reg : regularization parameter lambda
- * eta : learning rate
- *
- * @return gradient * eta
- */
-double *SVDPlusPlus::grad_A(double *Ui, int Yij,
-                        double *Vj, double reg, double eta, double ai, double bj)
-{
-    double *gradient = new double [M];
-    double dot_product = 0.0;
-    // Compute the dot product
-    for (int i = 0; i < K; i++) {
-        dot_product += Ui[i] * Vj[i];
-    }
-    // Compute the gradient
-    for (int m = 0; m < M; m++) {
-        gradient[m] = (1 - reg * eta) * ai
-                   + eta * 2 * (Yij - dot_product - ai - bj);
-    }
-    return gradient;
-}
 
-/**
- * @brief Computes gradient of regularized loss function with respect to B
- * multiplied by eta
- *
- * @param
- * Vj : jth column of V^T (jth row of V)
- * Yij : training point
- * Ui : ith row of U
- * reg : regularization parameter lambda
- * eta : learning rate
- *
- * @return gradient * eta
- */
-double *SVDPlusPlus::grad_B(double *Ui, int Yij,
-                        double *Vj, double reg, double eta, double ai, double bj)
-{
-    double *gradient = new double [N];
-    double dot_product = 0.0;
-    // Compute the dot product
-    for (int i = 0; i < K; i++) {
-        dot_product += Ui[i] * Vj[i];
-    }
-    // Compute the gradient
-    for (int m = 0; m < N; m++) {
-        gradient[m] = (1 - reg * eta) * bj
-                   + eta * 2 * (Yij - dot_product - ai - bj);
-    }
-    return gradient;
-}
-
-/**
- * @brief Computes gradient of user factor function
- *
- * @param
- * Vj : jth column of V^T (jth row of V)
- * Yij : training point
- * Ui : ith row of U
- * reg : regularization parameter lambda
- * eta : learning rate
- *
- * @return gradient * eta
- */
-double *SVDPlusPlus::grad_y(double *Ui, int Yij,
-                        double *Vj, double reg, double eta, double ai, double bj):
-{
-    // What's the size of the y factor thing? Is it like the number of users
-    // or the number of movies?
-    double *gradient = new double [N];
-    double dot_product = 0.0;
-    // Compute the dot product
-    for (int i = 0; i < K; i++) {
-        dot_product += Ui[i] * Vj[i];
-    }
-    // Compute the gradient
-    for (int m = 0; m < N; m++) {
-        gradient[m] = (1 - reg * eta) * bj
-                   + eta * 2 * (Yij - dot_product - ai - bj);
-    }
-    return gradient;
-}
 
 /**
  * @brief Computes mean regularized squared-error of predictions made by
@@ -236,54 +190,24 @@ double *SVDPlusPlus::grad_y(double *Ui, int Yij,
  * @return error (MSE)
  */
 double SVDPlusPlus::get_err(double **U, double **V,
-        tuple<int, int, int> *Y, int Y_length, double reg, double *a, double *b)
+        vector<tuple<int, int, int>> *test_data, double reg, double *a, double *b)
 {
-    // Based off of CS 155 solutions (check it)
+    // SOMEONE CHECK THIS FUNCTION AT SOME POINT - KARTHIK
     double err = 0.0;
-    for (int m = 0; m < Y_length; m++) {
-        int i = get<0>(Y[m]);
-        int j = get<1>(Y[m]);
-        int Yij = get<2>(Y[m]);
-
-        double dot_product = 0.0;
-        for (int n = 0; n < K; n++) {
-            dot_product += U[i - 1][n] * V[j - 1][n];
+    int num = 0;
+    // Loop over users
+    for (int userId = 0; userId < M; userId++) {
+        int num_ratings = test_data[userId].size();
+        // Loop over training points
+        for (int itemI = 0; itemI < num_ratings; itemI++) {
+            int itemId = get<0>(test_data[userId][itemI]);
+            int rating = get<2>(test_data[userId][itemI]);
+            double predict = predictRating(userId, itemId);
+            err += (predict - rating) * (predict - rating);
+            num++;
         }
-        // cout << "ai " << a[i] << "  bj " << b[j] << endl;
-        err += 0.5 * (Yij - dot_product - a[i] - b[j]) * (Yij - dot_product - a[i] - b[j]);
     }
-
-    if (reg != 0) {
-        double U_frobenius_squared_norm = 0.0;
-        double V_frobenius_squared_norm = 0.0;
-        double a_frobenius_squared_norm = 0.0;
-        double b_frobenius_squared_norm = 0.0;
-        for (int row = 0; row < M; row++) {
-            for (int col = 0; col < K; col++) {
-                U_frobenius_squared_norm += U[row][col] * U[row][col];
-            }
-        }
-        for (int row = 0; row < N; row++) {
-            for (int col = 0; col < K; col++) {
-                V_frobenius_squared_norm += V[row][col] * V[row][col];
-            }
-        }
-        for (int i = 0; i < M; i++) {
-            a_frobenius_squared_norm += a[i] * a[i];
-        }
-        for (int j = 0; j < N; j++) {
-            b_frobenius_squared_norm += b[j] * b[j];
-        }
-        err += 0.5 * reg * U_frobenius_squared_norm;
-        err += 0.5 * reg * V_frobenius_squared_norm;
-        err += 0.5 * reg * a_frobenius_squared_norm;
-        err += 0.5 * reg * b_frobenius_squared_norm;
-    }
-
-    if (err < 0) {
-        cout << "ABORT: error below zero" << endl;
-    }
-    return err / Y_length;
+    return sqrt(err / num); 
 }
 
 /**
@@ -297,19 +221,21 @@ double SVDPlusPlus::get_err(double **U, double **V,
  * eps : fraction where if regularized MSE between epochs is less than
  *       eps times the decrease in MSE after the first epoch, we stop training
  * max_epochs : maximum number of epochs for training
+ * ratings_info : array of vector of tuples where i^th vector corresponds to ratings
+ *              of i^th user
  */
 void SVDPlusPlus::train_model(int M, int N, int K, double eta,
-        double reg, tuple<int, int, int> *Y, int Y_length,
+        double reg, vector<tuple<int, int, int>> *ratings_info,
         double eps, int max_epochs) {
     cout << "Training model..." << endl;
-    // Based off of CS 155 solutions
     this->M = M;
     this->N = N;
     this->K = K;
+    this->ratings_info = ratings_info;
     // Weird way to declare 2-D array but it allocates one contiguous block
-    // and allows for indexing normally e.g. U[0][1] is row 0, col 1
-    // Note that we store V^T, not V (i.e. N x K matrix, not K x N)
     // stackoverflow.com/questions/29375797/copy-2d-array-using-memcpy/29375830
+
+    // Initialize all arrays
     U = new double *[M];
     U[0] = new double [M * K];
     for (int i = 1; i < M; i++) {
@@ -320,100 +246,56 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
     for (int j = 1; j < N; j++) {
         V[j] = V[j - 1] + K;
     }
+    y = new double *[N];
+    y[0] = new double [N * K];
+    for (int i = 1; i < N; i++) {
+        y[i] = y[i - 1] + K;
+    }
+    sumMW = new double *[M];
+    sumMW[0] = new double [M * K];
+    for (int i = 1; i < M; i++) {
+        sumMW[i] = sumMW[i - 1] + K;
+    }
+    // Bias stuff
+    a = new double [M];
+    b = new double [N];
+
 
     std::random_device rd;  // Will be used to obtain a seed for random engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> dist(-0.5, 0.5); // Uniform distribution
 
-    // Initialize the values of U to be uniform between -0.5 and 0.5
+    // Initialize all values to be uniform between -0.5 and 0.5
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < K; j++) {
             U[i][j] = dist(gen);
+            sumMW[i][j] = dist(gen);
         }
     }
-    // Initialize the values of V to be uniform between -0.5 and 0.5
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < K; j++) {
             V[i][j] = dist(gen);
+            y[i][j] = 0;
         }
     }
-
-    //Bias stuff
-    a = new double [M];
-    b = new double [N];
-    // Initialize the values of a to be uniform between -0.5 and 0.5
     for (int i = 0; i < M; i++) {
         a[i] = dist(gen);
     }
-      // Initialize the values of  b to be uniform between -0.5 and 0.5
     for (int i = 0; i < N; i++) {
         b[i] = dist(gen);
     }
 
     double delta;
-    // Creates list of indices so we can shuffle them later
-    // http://en.cppreference.com/w/cpp/algorithm/iota
-    std::list<int> indices(Y_length);
-    std::iota(indices.begin(), indices.end(), 0);
-
-
     for (int epoch = 0; epoch < max_epochs; epoch++) {
         cout << "Epoch: " << epoch << endl;
-        // Progress Bar
-        ProgressBar progressBar(Y_length, 100);
-        double before_E_in = get_err(U, V, Y, Y_length, reg, a, b);
-
-        std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
-        std::iota(shuffled_indices.begin(),
-                  shuffled_indices.end(), indices.begin());
-        std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), gen);
-
-        //cout << "A" << endl;
-        // auto requires C++11
-        for (auto ind: shuffled_indices) {
-            int i = get<0>(Y[*ind]);
-            int j = get<1>(Y[*ind]);
-            int Yij = get<2>(Y[*ind]);
-            ++progressBar;
-            progressBar.display();
-
-            // Update the row of U using the gradient
-            // Note: the gradient function actually returns U[i - 1] - gradient
-            // so we simply set U[i - 1] to this value (instead of subtracting
-            // the gradient)
-
-            // ALL OF THE FOLLOWING GRADIENTS NEED TO BE PUT INTO ONE FUNCTION - KARTHIK
-            double *gradient_U = grad_U(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1], b[j - 1]);
-            // DON'T SCREW UP THE BELOW BY SWITCHING U AND V!!!
-            double *gradient_V = grad_V(V[j - 1], Yij, U[i - 1], reg, eta, a[i - 1], b[j - 1]);
-
-            double *gradient_A = grad_A(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1], b[j - 1]);
-            double *gradient_B = grad_B(U[i - 1], Yij, V[j - 1], reg, eta, a[i - 1] , b[j - 1]);
-
-            //cout << "B i: " << i << "    j: " << j <<  "   M: "<< M<<"   N:  "<< N << endl;
-            for (int index = 0; index < K; index++) {
-                U[i - 1][index] = gradient_U[index];
-                V[j - 1][index] = gradient_V[index];
-            }
-
-            for (int l = 0; l < M; l++) {
-                a[l] = gradient_A[l];
-            }
-
-            for (int l = 0; l < N; l++) {
-                b[l] = gradient_B[l];
-            }
-
-            // Freeing the dynamically allocated gradient
-            delete[] gradient_U;
-            delete[] gradient_V;
-            delete[] gradient_A;
-            delete[] gradient_B;
-        }
-        progressBar.done();
+        is_trained = true;
+        double before_E_in = get_err(U, V, ratings_info, reg, a, b);
+        
+        // Train the model
+        Train(eta, reg);
 
         // Check early stopping conditions
-        double E_in = get_err(U, V, Y, Y_length, reg, a, b);
+        double E_in = get_err(U, V, ratings_info, reg, a, b);
         if (epoch == 0) {
             delta = before_E_in - E_in;
         }
@@ -447,12 +329,20 @@ double SVDPlusPlus::predictRating(int i, int j)
         cout << "Model not trained yet!" << endl;
         return 0;
     }
-    double rating = 0;
-    for (int m = 0; m < K; m++) {
-        rating += U[i - 1][m] * V[j - 1][m] + a[i - 1] + b[j - 1];
+
+    // Compute the predicted rating
+    int num_ratings = ratings_info[i].size();
+    double sq = 0;
+    if (num_ratings > 1) {
+        sq = 1. / sqrt(num_ratings);
     }
 
-    rating += mu;
+    double dot_product = 0;
+    for (int m = 0; m < K; m++) {
+        dot_product += (U[i - 1][m] + y[i - 1][m] * sq) * V[j - 1][m];
+    }
+
+    double rating = a[i - 1] + b[j - 1] + mu + dot_product;
 
     // Cap the ratings
     if (rating < 1) {
