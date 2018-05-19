@@ -250,7 +250,7 @@ double SVDPlusPlus::get_err(double **U, double **V,
         err += 0.5 * reg * a_norm;
         err += 0.5 * reg * b_norm;
     }
-    return (err / num); 
+    return sqrt(err / num); 
 }
 
 /**
@@ -269,6 +269,7 @@ double SVDPlusPlus::get_err(double **U, double **V,
  */
 void SVDPlusPlus::train_model(int M, int N, int K, double eta,
         double reg, vector<tuple<int, int, int>> *ratings_info,
+        vector<tuple<int, int, int>> *validation_ratings_info,
         double eps, int max_epochs) {
     cout << "Training model..." << endl;
     this->M = M;
@@ -340,6 +341,7 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
 
         // Check early stopping conditions
         double E_in = get_err(U, V, ratings_info, reg, a, b);
+        double E_val = get_err(U, V, validation_ratings_info, reg, a, b);
         if (epoch == 0) {
             delta = before_E_in - E_in;
         }
@@ -356,6 +358,7 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
             cout << ", Delta error: " << (before_E_in - E_in);
             cout << ", Threshold delta error: " << (eps * delta) << endl;
         }
+        cout << "Validation error: " << E_val << endl;
     }
     is_trained = true;
     return;

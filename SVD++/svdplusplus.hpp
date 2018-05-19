@@ -38,6 +38,7 @@ public:
     // Trains model to generate U and V
     void train_model(int M, int N, int K, double eta, double reg,
             vector<tuple<int, int, int>> *ratings_info, 
+            vector<tuple<int, int, int>> *validation_ratings_info, 
             double eps, int max_epochs);
     double predictRating(int i, int j);
     void Train(double reg, double eta);

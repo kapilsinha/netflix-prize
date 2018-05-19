@@ -29,8 +29,8 @@ SVDPlusPlus *run_model(void) {
     // Set train and test set
     int train_set = 1; // Training set
     int Y_train_size = ARRAY_1_SIZE;
-    int test_set = 2; // Validation set
-    int Y_test_size = ARRAY_2_SIZE;
+    int test_set = 4; // Validation set
+    int Y_test_size = ARRAY_4_SIZE;
 
     // Initialization
     tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
@@ -59,7 +59,7 @@ SVDPlusPlus *run_model(void) {
     
 
     SVDPlusPlus *matfac = new SVDPlusPlus();
-    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, EPS, MAX_EPOCHS);
+    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, test_ratings_info, EPS, MAX_EPOCHS);
 
     // Get the errors
     double train_error = matfac->get_err(matfac->getU(), matfac->getV(),
