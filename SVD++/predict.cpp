@@ -19,7 +19,7 @@
 
 #define REG 0.00 // Regularization
 #define ETA 0.01 // Learning rate
-#define MAX_EPOCHS 200
+#define MAX_EPOCHS 100
 #define EPS 0.001 // 0.0001
 
 using namespace std;
@@ -27,10 +27,10 @@ using namespace std;
 /* Run the model. */
 SVDPlusPlus *run_model(void) {
     // Set train and test set
-    int train_set = 2; // Training set
-    int Y_train_size = ARRAY_2_SIZE;
-    int test_set = 3; // Validation set
-    int Y_test_size = ARRAY_3_SIZE;
+    int train_set = 1; // Training set
+    int Y_train_size = ARRAY_1_SIZE;
+    int test_set = 2; // Validation set
+    int Y_test_size = ARRAY_2_SIZE;
 
     // Initialization
     tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];

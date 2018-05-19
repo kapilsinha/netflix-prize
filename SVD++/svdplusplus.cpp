@@ -84,15 +84,32 @@ SVDPlusPlus::~SVDPlusPlus()
  *
  * @return gradient * eta
  */
-void SVDPlusPlus::Train(double reg, double eta)
+void SVDPlusPlus::Train(double eta, double reg)
 {
-    cout << "TRAIN" << endl;
     ProgressBar progressBar(M, 100);
     int userId, itemId, rating;
     // THIS IS NOT STOCHASTIC GRADIENT DESCENT ?????
-    for (userId = 0; userId < M; userId++) {
+
+    // RANDOMIZING 
+    std::random_device rd;  // Will be used to obtain a seed for random engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+
+    std::list<int> indices(M);
+    std::iota(indices.begin(), indices.end(), 1);
+
+    std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
+    std::iota(shuffled_indices.begin(),
+              shuffled_indices.end(), indices.begin());
+    std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), gen);
+
+
+
+
+    // END RANDOMIZING
+    for (auto ind: shuffled_indices) {
         ++progressBar;
         progressBar.display();
+        userId = *ind;
         // Number of ratings for this user
         int num_ratings = ratings_info[userId].size();
         double sqrtNum = 0;
@@ -107,9 +124,9 @@ void SVDPlusPlus::Train(double reg, double eta)
             double sumy = 0;
             for (int i = 0; i < num_ratings; ++i) {
                 int itemI = get<0>(ratings_info[userId][i]);
-                sumy += y[itemI][k];
+                sumy += y[itemI - 1][k];
             }
-            sumMW[userId][k] = sumy;
+            sumMW[userId - 1][k] = sumy;
         }
 
         // Loop over all movies rated by this userId (Line 98)
@@ -120,19 +137,19 @@ void SVDPlusPlus::Train(double reg, double eta)
             double predict = predictRating(userId, itemId);
             double error = rating - predict;
             // Subtract 1 because of indexing
-            userId -= 1;
-            itemId -= 1;
+            // userId -= 1;
+            // itemId -= 1;
             // Update biases using gradients (Line 103)
-            a[userId] += eta * (error - reg * a[userId]);
-            b[itemId] += eta * (error - reg * b[itemId]);
+            a[userId - 1] += eta * (error - reg * a[userId - 1]);
+            b[itemId - 1] += eta * (error - reg * b[itemId - 1]);
 
             // Update U and V using gradients (Line 106)
             for (int k = 0; k < K; k++) {
-                auto uf = U[userId][k];
-                auto mf = V[itemId][k];
+                auto uf = U[userId - 1][k];
+                auto mf = V[itemId - 1][k];
                 // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
-                U[userId][k] += eta * (error * mf - 0.015 * uf);
-                V[itemId][k] += eta * (error * (uf + sqrtNum * sumMW[userId][k]) - 0.015 * mf);
+                U[userId - 1][k] += eta * (error * mf - 0.015 * uf);
+                V[itemId - 1][k] += eta * (error * (uf + sqrtNum * sumMW[userId - 1][k]) - 0.015 * mf);
                 tmpSum[k] += error * sqrtNum * mf; 
             }
         }
@@ -144,16 +161,16 @@ void SVDPlusPlus::Train(double reg, double eta)
         for (int j = 0; j < num_ratings; ++j) {
             itemId = get<0>(ratings_info[userId][j]);
             for (int k = 0; k < K; k++) {
-                double tmpMW = y[itemId][k];
+                double tmpMW = y[itemId - 1][k];
                 // WHY THE FUCK IS THERE A 0.015 HERE ?????????? - KARTHIK
-                y[itemId][k] += eta * (tmpSum[k] - 0.015 * tmpMW);
-                sumMW[userId][k] += y[itemId][k] - tmpMW;
+                y[itemId - 1][k] += eta * (tmpSum[k] - 0.015 * tmpMW);
+                sumMW[userId - 1][k] += y[itemId - 1][k] - tmpMW;
             }
         }
     }
 
     // NO FUCKING CLUE WHAT THIS IS EITHER - KARTHIK (Line 123)
-    for (userId = 0; userId < M; userId++) {
+    for (userId = 1; userId <= M; userId++) {
         int num_ratings = ratings_info[userId].size();
         double sqrtNum = 0;
         if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
@@ -162,9 +179,9 @@ void SVDPlusPlus::Train(double reg, double eta)
             double sumy = 0;
             for (int i = 0; i < num_ratings; i++) {
                 int itemI = get<0>(ratings_info[userId][i]);
-                sumy += y[itemI][k];
+                sumy += y[itemI - 1][k];
             }
-            sumMW[userId][k] = sumy;
+            sumMW[userId - 1][k] = sumy;
         }
 
     }
@@ -207,7 +224,33 @@ double SVDPlusPlus::get_err(double **U, double **V,
             num++;
         }
     }
-    return sqrt(err / num); 
+    if (reg != 0) {
+        double U_norm = 0.0;
+        double V_norm = 0.0;
+        double a_norm = 0.0;
+        double b_norm = 0.0;
+        for (int row = 0; row < M; row++) {
+            for (int col = 0; col < K; col++) {
+                U_norm += U[row][col] * U[row][col];
+            }
+        }
+        for (int row = 0; row < N; row++) {
+            for (int col = 0; col < K; col++) {
+                V_norm += V[row][col] * V[row][col];
+            }
+        }
+        for (int i = 0; i < M; i++) {
+            a_norm += a[i] * a[i];
+        }
+        for (int j = 0; j < N; j++) {
+            b_norm += b[j] * b[j];
+        }
+        err += 0.5 * reg * U_norm;
+        err += 0.5 * reg * V_norm;
+        err += 0.5 * reg * a_norm;
+        err += 0.5 * reg * b_norm;
+    }
+    return (err / num); 
 }
 
 /**
@@ -235,6 +278,8 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
     // Weird way to declare 2-D array but it allocates one contiguous block
     // stackoverflow.com/questions/29375797/copy-2d-array-using-memcpy/29375830
 
+    eta = 0.01;
+
     // Initialize all arrays
     U = new double *[M];
     U[0] = new double [M * K];
@@ -259,7 +304,6 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
     // Bias stuff
     a = new double [M];
     b = new double [N];
-
 
     std::random_device rd;  // Will be used to obtain a seed for random engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
@@ -300,9 +344,9 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
             delta = before_E_in - E_in;
         }
         else if (before_E_in - E_in < eps * delta) {
-            cout << "eps" << eps;
-            cout<< "delta" << delta;
-            cout << "Error: " << E_in;
+            cout << "eps " << eps;
+            cout<< ", delta " << delta;
+            cout << ", Error: " << E_in;
             cout << ", Delta error: " << (before_E_in - E_in);
             cout << ", Threshold delta error: " << (eps * delta) << endl;
             break;
@@ -339,7 +383,7 @@ double SVDPlusPlus::predictRating(int i, int j)
 
     double dot_product = 0;
     for (int m = 0; m < K; m++) {
-        dot_product += (U[i - 1][m] + y[i - 1][m] * sq) * V[j - 1][m];
+        dot_product += (U[i - 1][m] + sumMW[i - 1][m] * sq) * V[j - 1][m];
     }
 
     double rating = a[i - 1] + b[j - 1] + mu + dot_product;
