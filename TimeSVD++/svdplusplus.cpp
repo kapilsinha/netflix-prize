@@ -27,11 +27,17 @@
 #define MAX_EPOCHS 200
 #define EPS 0.001 // 0.0001
 
+#define NUM_BINS 30
+#define NUM_DAYS 2243
+
+#define sign(n) (n==0? 0 : (n<0?-1:1))
+
 using namespace std;
 
 // Let mu be the overall mean rating
 const double mu = 3.6;
-
+double G_alpha = 0.00001;        //gamma for alpha
+const double L_alpha = 0.0004;   //learning rate for alpha
 
 /**
  * @brief Constructs a SVDPlusPlus instance, which contains the sparse
@@ -87,10 +93,10 @@ SVDPlusPlus::~SVDPlusPlus()
 void SVDPlusPlus::Train(double eta, double reg)
 {
     ProgressBar progressBar(M, 100);
-    int userId, itemId, rating;
+    int userId, itemId, rating, timeval;
     // THIS IS NOT STOCHASTIC GRADIENT DESCENT ?????
 
-    // RANDOMIZING 
+    // RANDOMIZING
     std::random_device rd;  // Will be used to obtain a seed for random engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 
@@ -101,8 +107,6 @@ void SVDPlusPlus::Train(double eta, double reg)
     std::iota(shuffled_indices.begin(),
               shuffled_indices.end(), indices.begin());
     std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), gen);
-
-
 
 
     // END RANDOMIZING
@@ -134,7 +138,8 @@ void SVDPlusPlus::Train(double eta, double reg)
             // DOUBLE CHECK THE INDICES - KARTHIK
             itemId = get<0>(ratings_info[userId][i]);
             rating = get<2>(ratings_info[userId][i]);
-            double predict = predictRating(userId, itemId);
+            timeval = get<1>(ratings_info[userId][i]);
+            double predict = predictRating(userId, itemId, timeval);
             double error = rating - predict;
             // Subtract 1 because of indexing
             // userId -= 1;
@@ -143,6 +148,11 @@ void SVDPlusPlus::Train(double eta, double reg)
             a[userId - 1] += eta * (error - reg * a[userId - 1]);
             b[itemId - 1] += eta * (error - reg * b[itemId - 1]);
 
+            Bi_Bin[itemId - 1][calc_bin(timeval)] += eta * (error - reg * Bi_Bin[itemId - 1][calc_bin(timeval)]);
+            Alpha_u[userId - 1] += G_alpha * (error * calc_dev_u(userId - 1,timeval)  - L_alpha * Alpha_u[userId - 1]);
+            B_ut[userId - 1][timeval] += eta * (error - reg * B_ut[userId - 1][timeval]);
+
+
             // Update U and V using gradients (Line 106)
             for (int k = 0; k < K; k++) {
                 auto uf = U[userId - 1][k];
@@ -150,13 +160,13 @@ void SVDPlusPlus::Train(double eta, double reg)
                 // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
                 U[userId - 1][k] += eta * (error * mf - 0.015 * uf);
                 V[itemId - 1][k] += eta * (error * (uf + sqrtNum * sumMW[userId - 1][k]) - 0.015 * mf);
-                tmpSum[k] += error * sqrtNum * mf; 
+                tmpSum[k] += error * sqrtNum * mf;
             }
         }
 
         // Update sumMW and y (Line 114)
         // MAYBE PUT THIS IN THE LOOP ABOVE???
-        // COMPLETELY UNCLEAR ON THE LOGIC HERE OR WTF IS GOING SOMEBODY PLS EXPLAIN - KARTHIK 
+        // COMPLETELY UNCLEAR ON THE LOGIC HERE OR WTF IS GOING SOMEBODY PLS EXPLAIN - KARTHIK
         // ????????????????????????????????????????????????????????????????????????????????
         for (int j = 0; j < num_ratings; ++j) {
             itemId = get<0>(ratings_info[userId][j]);
@@ -190,7 +200,22 @@ void SVDPlusPlus::Train(double eta, double reg)
     return;
 }
 
+double SVDPlusPlus::calc_dev_u(int user, int t)
+{
+    if(Dev[user].count(t)!=0) {
+        return Dev[user][t];
+    }
 
+    double temp = sign(t - Tu[user]) * pow(double(abs(t - Tu[user])), 0.4);
+    Dev[user][t] = temp;
+    return temp;
+}
+
+int SVDPlusPlus::calc_bin(int t)
+{
+    int size_of_bin = NUM_DAYS/NUM_BINS + 1;
+    return t / size_of_bin;
+}
 
 /**
  * @brief Computes mean regularized squared-error of predictions made by
@@ -219,7 +244,8 @@ double SVDPlusPlus::get_err(double **U, double **V,
         for (int itemI = 0; itemI < num_ratings; itemI++) {
             int itemId = get<0>(test_data[userId][itemI]);
             int rating = get<2>(test_data[userId][itemI]);
-            double predict = predictRating(userId, itemId);
+            int timeval = get<1>(test_data[userId][itemI]);
+            double predict = predictRating(userId, itemId, timeval);
             err += (predict - rating) * (predict - rating);
             num++;
         }
@@ -250,7 +276,7 @@ double SVDPlusPlus::get_err(double **U, double **V,
         err += 0.5 * reg * a_norm;
         err += 0.5 * reg * b_norm;
     }
-    return sqrt(err / num); 
+    return sqrt(err / num);
 }
 
 /**
@@ -306,6 +332,66 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
     a = new double [M];
     b = new double [N];
 
+    // Initialize Dev array for deviation
+    Dev = new map<int,double> [M];
+
+    // Initialize Tu
+    Tu = new double[M];
+    for (int i = 0; i < M; i++) {
+        double temp = 0;
+        int num_ratings = ratings_info[i].size();
+
+        if (num_ratings == 0){
+            Tu[i] = 0;
+        }
+
+        else {
+            for (int j = 0; j < num_ratings; j++) {
+                temp += get<1>(ratings_info[i][j]);
+            }
+
+            Tu[i] = temp / num_ratings;
+        }
+    }
+
+    //Initialize Alpha_u
+    Alpha_u = new double[M];
+    for (int i = 0; i < M; i++){
+        Alpha_u[i] = 0.0;
+    }
+
+    // Initialize Bi_Bin
+    Bi_Bin = new double* [N];
+
+    for (int i = 0; i < N; i++) {
+        Bi_Bin[i] = new double[NUM_BINS];
+    }
+
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < NUM_BINS; j++){
+            Bi_Bin[i][j] = 0.0;
+        }
+    }
+
+    // Initialize B_ut
+    B_ut = new map<int,double> [M];
+
+    for (int i = 0; i < M; i++) {
+        map<int,double> temp;
+
+        for (int j = 0; j < ratings_info[i].size(); j++) {
+            int date = get<1>(ratings_info[i][j]);
+            if (temp.count(date) == 0) {
+                temp[date] = 0.0000001;
+            }
+
+            else continue;
+        }
+
+        B_ut[i] = temp;
+    }
+
+
     std::random_device rd;  // Will be used to obtain a seed for random engine
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_real_distribution<> dist(-0.5, 0.5); // Uniform distribution
@@ -335,7 +421,7 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
         cout << "Epoch: " << epoch << endl;
         is_trained = true;
         double before_E_in = get_err(U, V, ratings_info, reg, a, b);
-        
+
         // Train the model
         Train(eta, reg);
 
@@ -370,7 +456,7 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
  * matrix outputs (since we start indexing at 0, not 1)
  * @return predicted rating
  */
-double SVDPlusPlus::predictRating(int i, int j)
+double SVDPlusPlus::predictRating(int i, int j, int t)
 {
     if (!is_trained) {
         cout << "Model not trained yet!" << endl;
@@ -389,7 +475,8 @@ double SVDPlusPlus::predictRating(int i, int j)
         dot_product += (U[i - 1][m] + sumMW[i - 1][m] * sq) * V[j - 1][m];
     }
 
-    double rating = a[i - 1] + b[j - 1] + mu + dot_product;
+    double rating = a[i - 1] + b[j - 1] + mu + dot_product + \
+        Bi_Bin[j - 1][calc_bin(t)] + Alpha_u[i - 1]*calc_dev_u(i - 1,t) + B_ut[i - 1][t];
 
     // Cap the ratings
     if (rating < 1) {
