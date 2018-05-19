@@ -16,11 +16,11 @@
 
 #define M 458293 // Number of users
 #define N 17770 // Number of movies
-#define K 10 // Number of factors
+#define K 50 // Number of factors
 
-#define REG 0.00 // Regularization
-#define ETA 0.01 // Learning rate
-#define MAX_EPOCHS 100
+#define REG 0.0015 // Regularization
+#define ETA 0.008 // Learning rate
+#define MAX_EPOCHS 40
 #define EPS 0.001 // 0.0001
 
 using namespace std;
@@ -29,49 +29,33 @@ using namespace std;
 SVDPlusPlus *run_model(void) {
     // Set train and test set
     int train_set = 1; // Training set
-    int test_set = 2; // Validation set
+    int val_set = 2; // Validation set
+    int test_set = 4; // Probe set
     Data data;
-    /*
-    int Y_train_size = ARRAY_1_SIZE;
-    int Y_test_size = ARRAY_4_SIZE;
-
-    // Initialization
-    tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
-    tuple<int, int, int> *Y_test = new tuple<int, int, int> [Y_test_size];
-
-    tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
-    tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
-
-    // Get rid of the dates
-    for (int i = 0; i < Y_train_size; i++) {
-        tuple<int, int, int, int> x = Y_train_original[i];
-        Y_train[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
-    }
-    for (int i = 0; i < Y_test_size; i++) {
-        tuple<int, int, int, int> x = Y_test_original[i];
-        Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
-    }
-    */
 
     // Initialization
     vector<tuple<int, int, int>> *train_ratings_info = new vector<tuple<int, int, int>> [M];
+    vector<tuple<int, int, int>> *val_ratings_info = new vector<tuple<int, int, int>> [M];
     vector<tuple<int, int, int>> *test_ratings_info = new vector<tuple<int, int, int>> [M];
 
     train_ratings_info = data.format_user_data(train_set);
+    val_ratings_info = data.format_user_data(val_set);
     test_ratings_info = data.format_user_data(test_set);
 
-
     SVDPlusPlus *matfac = new SVDPlusPlus();
-    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, test_ratings_info, EPS, MAX_EPOCHS);
+    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, val_ratings_info, test_ratings_info, EPS, MAX_EPOCHS);
 
     // Get the errors
     double train_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                                        train_ratings_info, REG, matfac->getA(), matfac->getB());
+                         train_ratings_info, REG, matfac->getA(), matfac->getB());
+    double val_error = matfac->get_err(matfac->getU(), matfac->getV(),
+                       val_ratings_info, REG, matfac->getA(), matfac->getB());
     double test_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                                       test_ratings_info, REG,  matfac->getA(), matfac->getB());
+                        test_ratings_info, REG,  matfac->getA(), matfac->getB());
 
     cout << "Train error: " << train_error << endl;
-    cout << "Test error: " << test_error << endl;
+    cout << "Validation error: " << val_error << endl;
+    cout << "Test/probe error: " << test_error << endl;
 
     return matfac;
 }

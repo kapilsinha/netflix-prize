@@ -296,6 +296,7 @@ double SVDPlusPlus::get_err(double **U, double **V,
 void SVDPlusPlus::train_model(int M, int N, int K, double eta,
         double reg, vector<tuple<int, int, int>> *ratings_info,
         vector<tuple<int, int, int>> *validation_ratings_info,
+        vector<tuple<int, int, int>> *probe_ratings_info,
         double eps, int max_epochs) {
     cout << "Training model..." << endl;
     this->M = M;
@@ -304,8 +305,6 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
     this->ratings_info = ratings_info;
     // Weird way to declare 2-D array but it allocates one contiguous block
     // stackoverflow.com/questions/29375797/copy-2d-array-using-memcpy/29375830
-
-    eta = 0.01;
 
     // Initialize all arrays
     U = new double *[M];
@@ -424,10 +423,13 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
 
         // Train the model
         Train(eta, reg);
+       
+        eta *= 0.9; // Scale learning rate by 0.9 after each epoch
 
         // Check early stopping conditions
         double E_in = get_err(U, V, ratings_info, reg, a, b);
         double E_val = get_err(U, V, validation_ratings_info, reg, a, b);
+        double E_probe = get_err(U, V, probe_ratings_info, reg, a, b);
         if (epoch == 0) {
             delta = before_E_in - E_in;
         }
@@ -445,6 +447,7 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
             cout << ", Threshold delta error: " << (eps * delta) << endl;
         }
         cout << "Validation error: " << E_val << endl;
+        cout << "Probe error: " << E_probe << endl;
     }
     is_trained = true;
     return;
