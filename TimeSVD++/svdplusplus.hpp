@@ -46,6 +46,7 @@ public:
     void train_model(int M, int N, int K, double eta, double reg,
             vector<tuple<int, int, int>> *ratings_info,
             vector<tuple<int, int, int>> *validation_ratings_info,
+            vector<tuple<int, int, int>> *probe_ratings_info,
             double eps, int max_epochs);
     double predictRating(int i, int j, int t);
     void Train(double reg, double eta);

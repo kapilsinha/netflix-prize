@@ -21,5 +21,9 @@ using namespace std;
 
 #include "svdplusplus.hpp"
 
-SVDPlusPlus *run_model(void);
-void write_preds(SVDPlusPlus *model);
+class Predict
+{
+public:
+    SVDPlusPlus *run_model(void);
+    void write_preds(SVDPlusPlus *model);
+};

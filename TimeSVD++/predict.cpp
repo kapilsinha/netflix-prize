@@ -26,7 +26,7 @@
 using namespace std;
 
 /* Run the model. */
-SVDPlusPlus *run_model(void) {
+SVDPlusPlus* Predict::run_model(void) {
     // Set train and test set
     int train_set = 1; // Training set
     int val_set = 2; // Validation set
@@ -60,7 +60,7 @@ SVDPlusPlus *run_model(void) {
     return matfac;
 }
 
-void write_preds(SVDPlusPlus *model) {
+void Predict::write_preds(SVDPlusPlus *model) {
     string filename ("Time_SVD_predictions_");
     filename += to_string(K) + "factors_" + to_string(REG) + "reg_"
              + to_string(ETA) + "eta_" + to_string(MAX_EPOCHS)
@@ -84,9 +84,10 @@ void write_preds(SVDPlusPlus *model) {
 
 int main(void)
 {
+    Predict p;
     cout << "Running the model..." << endl;
-    SVDPlusPlus *model = run_model();
+    SVDPlusPlus *model = p.run_model();
     cout << "Writing the predictions..." << endl;
-    write_preds(model);
+    p.write_preds(model);
     return 0;
 }
