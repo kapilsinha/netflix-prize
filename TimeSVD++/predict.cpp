@@ -19,7 +19,7 @@
 #define K 50 // Number of factors
 
 #define REG 0.0015 // Regularization
-#define ETA 0.008 // Learning rate
+#define ETA 0.007 // Learning rate
 #define MAX_EPOCHS 40
 #define EPS 0.001 // 0.0001
 

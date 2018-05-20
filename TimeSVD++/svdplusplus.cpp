@@ -30,6 +30,9 @@
 #define NUM_BINS 30
 #define NUM_DAYS 2243
 
+#define SCALE 0.9
+#define BETA 0.4
+
 #define sign(n) (n==0? 0 : (n<0?-1:1))
 
 using namespace std;
@@ -38,6 +41,7 @@ using namespace std;
 const double mu = 3.6;
 double G_alpha = 0.00001;        //gamma for alpha
 const double L_alpha = 0.0004;   //learning rate for alpha
+const double L_uv = 0.015;       //learning rate for U & V
 
 /**
  * @brief Constructs a SVDPlusPlus instance, which contains the sparse
@@ -158,8 +162,8 @@ void SVDPlusPlus::Train(double eta, double reg)
                 auto uf = U[userId - 1][k];
                 auto mf = V[itemId - 1][k];
                 // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
-                U[userId - 1][k] += eta * (error * mf - 0.015 * uf);
-                V[itemId - 1][k] += eta * (error * (uf + sqrtNum * sumMW[userId - 1][k]) - 0.015 * mf);
+                U[userId - 1][k] += eta * (error * mf - L_uv * uf);
+                V[itemId - 1][k] += eta * (error * (uf + sqrtNum * sumMW[userId - 1][k]) - L_uv * mf);
                 tmpSum[k] += error * sqrtNum * mf;
             }
         }
@@ -173,7 +177,7 @@ void SVDPlusPlus::Train(double eta, double reg)
             for (int k = 0; k < K; k++) {
                 double tmpMW = y[itemId - 1][k];
                 // WHY THE FUCK IS THERE A 0.015 HERE ?????????? - KARTHIK
-                y[itemId - 1][k] += eta * (tmpSum[k] - 0.015 * tmpMW);
+                y[itemId - 1][k] += eta * (tmpSum[k] - L_uv * tmpMW);
                 sumMW[userId - 1][k] += y[itemId - 1][k] - tmpMW;
             }
         }
@@ -206,7 +210,7 @@ double SVDPlusPlus::calc_dev_u(int user, int t)
         return Dev[user][t];
     }
 
-    double temp = sign(t - Tu[user]) * pow(double(abs(t - Tu[user])), 0.4);
+    double temp = sign(t - Tu[user]) * pow(double(abs(t - Tu[user])), BETA);
     Dev[user][t] = temp;
     return temp;
 }
@@ -423,8 +427,8 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
 
         // Train the model
         Train(eta, reg);
-       
-        eta *= 0.9; // Scale learning rate by 0.9 after each epoch
+
+        eta *= SCALE; // Scale learning rate by 0.9 after each epoch
 
         // Check early stopping conditions
         double E_in = get_err(U, V, ratings_info, reg, a, b);
