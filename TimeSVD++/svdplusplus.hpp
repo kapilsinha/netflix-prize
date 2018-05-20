@@ -43,8 +43,8 @@ public:
     double get_err(double **U, double **V,
         vector<tuple<int, int, int>> *test_data, double reg, double *a, double *b);
     // Trains model to generate U and V
-    void train_model(int M, int N, int K, double eta, double reg,
-            vector<tuple<int, int, int>> *ratings_info,
+    void train_model(int M, int N, int K, double eta,
+            double reg, vector<tuple<int, int, int>> *ratings_info,
             vector<tuple<int, int, int>> *validation_ratings_info,
             vector<tuple<int, int, int>> *probe_ratings_info,
             double eps, int max_epochs);
