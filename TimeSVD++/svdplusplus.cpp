@@ -38,7 +38,7 @@
 using namespace std;
 
 // Let mu be the overall mean rating
-const double mu = 3.6;
+const double mu = 3.512599976023349;
 double G_alpha = 0.00001;        //gamma for alpha
 const double L_alpha = 0.0004;   //learning rate for alpha
 const double L_uv = 0.015;       //learning rate for U & V
