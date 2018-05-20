@@ -18,18 +18,13 @@
 #define N 17770 // Number of movies
 #define K 50 // Number of factors
 
-#define REG 0.0015 // Regularization
-#define ETA 0.007 // Learning rate
-#define MAX_EPOCHS 40
-#define EPS 0.001 // 0.0001
-
 using namespace std;
 
 /* Run the model. */
 SVDPlusPlus* Predict::run_model(void) {
     // Set train and test set
-    int train_set = 1; // Training set
-    int val_set = 2; // Validation set
+    int train_set = 2; // Training set
+    int val_set = 3; // Validation set
     int test_set = 4; // Probe set
     Data data;
 
@@ -42,16 +37,16 @@ SVDPlusPlus* Predict::run_model(void) {
     val_ratings_info = data.format_user_data(val_set);
     test_ratings_info = data.format_user_data(test_set);
 
-    SVDPlusPlus *matfac = new SVDPlusPlus();
-    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, val_ratings_info, test_ratings_info, EPS, MAX_EPOCHS);
+    SVDPlusPlus *matfac = new SVDPlusPlus(M, N, K, train_ratings_info);
+    matfac->train_model(val_ratings_info, test_ratings_info);
 
     // Get the errors
     double train_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                         train_ratings_info, REG, matfac->getA(), matfac->getB());
+                         train_ratings_info, matfac->getA(), matfac->getB());
     double val_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                       val_ratings_info, REG, matfac->getA(), matfac->getB());
+                       val_ratings_info, matfac->getA(), matfac->getB());
     double test_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                        test_ratings_info, REG,  matfac->getA(), matfac->getB());
+                        test_ratings_info,  matfac->getA(), matfac->getB());
 
     cout << "Train error: " << train_error << endl;
     cout << "Validation error: " << val_error << endl;
@@ -61,10 +56,9 @@ SVDPlusPlus* Predict::run_model(void) {
 }
 
 void Predict::write_preds(SVDPlusPlus *model) {
-    string filename ("Time_SVD_predictions_");
-    filename += to_string(K) + "factors_" + to_string(REG) + "reg_"
-             + to_string(ETA) + "eta_" + to_string(MAX_EPOCHS)
-             + "epochs_" + to_string(EPS) + "eps.txt";
+    string filename("Time_SVD_predictions.txt");
+    // If you want this to be descriptive, you have to return a string containing
+    // the corresponding parameters from svdplusplus
     ofstream file (filename);
     if (file.is_open()) {
         Data data;
