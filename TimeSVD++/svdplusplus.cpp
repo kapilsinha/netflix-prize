@@ -22,8 +22,8 @@
 
 #define SCALE 0.9
 #define BETA 0.4
-#define MAX_EPOCHS 40
-#define EPS 0.001
+#define MAX_EPOCHS 100
+#define EPS 0.0001
 
 #define MU 3.513
 #define L_ALPHA 0.0004
@@ -57,11 +57,11 @@ double G = 0.007;                // general gamma
 // Actually I don't see the value in storing Y anymore... (I dont see the value in life anymore)
 SVDPlusPlus::SVDPlusPlus(int M, int N, int K, vector<tuple<int, int, int>> *ratings_info)
 {
-	this->M = M;
-	this->N = N;
-	this->K = K;
-	this->ratings_info = ratings_info;
-	// Initialize all arrays
+    this->M = M;
+    this->N = N;
+    this->K = K;
+    this->ratings_info = ratings_info;
+    // Initialize all arrays
     U = new double *[M];
     U[0] = new double [M * K];
     for (int i = 1; i < M; i++) {
@@ -153,21 +153,21 @@ SVDPlusPlus::SVDPlusPlus(int M, int N, int K, vector<tuple<int, int, int>> *rati
     // Initialize all values to be uniform between -0.5 and 0.5
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < K; j++) {
-            U[i][j] = dist(gen);
-            sumMW[i][j] = dist(gen);
+            U[i][j] = 0.1 * (rand() / (RAND_MAX + 1.0)) / sqrt(K);
+            sumMW[i][j] = 0.1 * (rand() / (RAND_MAX + 1.0)) / sqrt(K);
         }
     }
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < K; j++) {
-            V[i][j] = dist(gen);
+            V[i][j] = 0.1 * (rand() / (RAND_MAX + 1.0)) / sqrt(K);
             y[i][j] = 0;
         }
     }
     for (int i = 0; i < M; i++) {
-        a[i] = dist(gen);
+        a[i] = 0; // dist(gen);
     }
     for (int i = 0; i < N; i++) {
-        b[i] = dist(gen);
+        b[i] = 0; // dist(gen);
     }
 }
 

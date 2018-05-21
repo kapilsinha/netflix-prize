@@ -16,15 +16,15 @@
 
 #define M 458293 // Number of users
 #define N 17770 // Number of movies
-#define K 50 // Number of factors
+#define K 100 // Number of factors
 
 using namespace std;
 
 /* Run the model. */
 SVDPlusPlus* Predict::run_model(void) {
     // Set train and test set
-    int train_set = 2; // Training set
-    int val_set = 3; // Validation set
+    int train_set = 1; // Training set
+    int val_set = 2; // Validation set
     int test_set = 4; // Probe set
     Data data;
 
