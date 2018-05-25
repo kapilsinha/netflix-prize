@@ -332,8 +332,8 @@ double SVDPlusPlus::get_err(double **U, double **V,
         // Loop over training points
         for (int itemI = 0; itemI < num_ratings; itemI++) {
             int itemId = get<0>(test_data[userId][itemI]);
-            int rating = get<2>(test_data[userId][itemI]);
             int timeval = get<1>(test_data[userId][itemI]);
+            int rating = get<2>(test_data[userId][itemI]);
             double predict = predictRating(userId, itemId, timeval);
             err += (predict - rating) * (predict - rating);
             num++;

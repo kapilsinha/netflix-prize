@@ -16,9 +16,11 @@
 
 #define M 458293 // Number of users
 #define N 17770 // Number of movies
-#define K 100 // Number of factors
+#define K 200 // Number of factors
 
 using namespace std;
+
+Data data;
 
 /* Run the model. */
 SVDPlusPlus* Predict::run_model(void) {
@@ -26,7 +28,6 @@ SVDPlusPlus* Predict::run_model(void) {
     int train_set = 1; // Training set
     int val_set = 2; // Validation set
     int test_set = 4; // Probe set
-    Data data;
 
     // Initialization
     vector<tuple<int, int, int>> *train_ratings_info = new vector<tuple<int, int, int>> [M];
@@ -56,17 +57,41 @@ SVDPlusPlus* Predict::run_model(void) {
 }
 
 void Predict::write_preds(SVDPlusPlus *model) {
-    string filename("Time_SVD_predictions.txt");
+    string filename("Time_SVD_preds_" + to_string(K) + "_factors.txt");
     // If you want this to be descriptive, you have to return a string containing
     // the corresponding parameters from svdplusplus
-    ofstream file (filename);
+    ofstream file(filename);
     if (file.is_open()) {
-        Data data;
+        // tuple<int, int, int> *qual = data.getQual();
+        // Predict on the probe set
         tuple<int, int, int> *qual = data.getQual();
         for (int point = 0; point < ARRAY_5_SIZE; point++) {
             int i = get<0>(qual[point]);
             int j = get<1>(qual[point]);
             int t = get<2>(qual[point]);
+            file << model->predictRating(i, j, t) << "\n";
+        }
+        file.close();
+    }
+    else {
+        cout << "Unable to open file" << endl;
+    }
+}
+
+void Predict::write_probe_preds(SVDPlusPlus *model) {
+    string filename("Time_SVD_probe_preds_" + to_string(K) + "_factors.txt");
+    // If you want this to be descriptive, you have to return a string containing
+    // the corresponding parameters from svdplusplus
+    ofstream file (filename);
+    if (file.is_open()) {
+        // tuple<int, int, int> *qual = data.getQual();
+        // Predict on the probe set
+        tuple<int, int, int, int> *probe = data.getArray(4);
+        for (int point = 0; point < ARRAY_4_SIZE; point++) {
+            // Some jank ass indexing shit if you wanna fix it be my guest
+            int i = get<0>(probe[point]) - 1;
+            int j = get<1>(probe[point]) - 1;
+            int t = get<2>(probe[point]);
             file << model->predictRating(i, j, t) << "\n";
         }
         file.close();
@@ -83,5 +108,7 @@ int main(void)
     SVDPlusPlus *model = p.run_model();
     cout << "Writing the predictions..." << endl;
     p.write_preds(model);
+    cout << "Writing probe predictions..." << endl; 
+    p.write_probe_preds(model);
     return 0;
 }

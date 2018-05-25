@@ -26,4 +26,5 @@ class Predict
 public:
     SVDPlusPlus *run_model(void);
     void write_preds(SVDPlusPlus *model);
+    void write_probe_preds(SVDPlusPlus *model);
 };
