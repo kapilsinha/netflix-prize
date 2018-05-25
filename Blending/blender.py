@@ -36,11 +36,11 @@ test = np.array(test).T
 # Model
 model = Sequential()
 # SHOULD THE HIDDEN LAYER HAVE AN ACTIVATION
-model.add(Dense(16, activation="relu", input_dim=len(probe_models)))
+model.add(Dense(20, activation="relu", input_dim=len(probe_models)))
 model.add(Dense(1))
 model.compile(optimizer="rmsprop", loss="mean_squared_error")
 model.summary()
-model.fit(X, y, epochs=20, batch_size=256)
+model.fit(X, y, epochs=25, batch_size=256)
 
 # Predict on qual set
 print("Writing predictions")
