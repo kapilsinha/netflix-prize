@@ -6,6 +6,7 @@
  * @brief Actually runs the shit
  */
 #include "predict.hpp"
+#include <string>
 
 #define ARRAY_1_SIZE 94362233 // Training data
 #define ARRAY_2_SIZE 1965045 // Validation data
@@ -15,92 +16,80 @@
 
 #define M 458293 // Number of users
 #define N 17770 // Number of movies
-#define K 10 // Number of factors
-
-#define REG 0.00 // Regularization
-#define ETA 0.01 // Learning rate
-#define MAX_EPOCHS 100
-#define EPS 0.001 // 0.0001
+#define K 100 // Number of factors
 
 using namespace std;
 
+Data data;
+
 /* Run the model. */
-SVDPlusPlus *run_model(void) {
+SVDPlusPlus* run_model(void) {
     // Set train and test set
     int train_set = 1; // Training set
-    int Y_train_size = ARRAY_1_SIZE;
-    int test_set = 4; // Validation set
-    int Y_test_size = ARRAY_4_SIZE;
-
-    // Initialization
-    tuple<int, int, int> *Y_train = new tuple<int, int, int> [Y_train_size];
-    tuple<int, int, int> *Y_test = new tuple<int, int, int> [Y_test_size];
-
-    Data data;
-    tuple<int, int, int, int> *Y_train_original = data.getArray(train_set);
-    tuple<int, int, int, int> *Y_test_original = data.getArray(test_set);
-    
-    // Get rid of the dates
-    for (int i = 0; i < Y_train_size; i++) {
-        tuple<int, int, int, int> x = Y_train_original[i];
-        Y_train[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
-    }
-    for (int i = 0; i < Y_test_size; i++) {
-        tuple<int, int, int, int> x = Y_test_original[i];
-        Y_test[i] = make_tuple(get<0>(x), get<1>(x), get<3>(x));
-    }
+    int val_set = 2; // Validation set
+    int test_set = 4; // Probe set
 
     // Initialization
     vector<tuple<int, int, int>> *train_ratings_info = new vector<tuple<int, int, int>> [M];
+    vector<tuple<int, int, int>> *val_ratings_info = new vector<tuple<int, int, int>> [M];
     vector<tuple<int, int, int>> *test_ratings_info = new vector<tuple<int, int, int>> [M];
-    
-    train_ratings_info = data.format_user_data(train_set);
-    test_ratings_info = data.format_user_data(test_set);
-    
 
-    SVDPlusPlus *matfac = new SVDPlusPlus();
-    matfac->train_model(M, N, K, ETA, REG, train_ratings_info, test_ratings_info, EPS, MAX_EPOCHS);
+    train_ratings_info = data.format_user_data(train_set);
+    val_ratings_info = data.format_user_data(val_set);
+    test_ratings_info = data.format_user_data(test_set);
+
+    SVDPlusPlus *matfac = new SVDPlusPlus(M, N, K, train_ratings_info);
+    matfac->train_model(val_ratings_info, test_ratings_info);
 
     // Get the errors
     double train_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                                        train_ratings_info, REG, matfac->getA(), matfac->getB());
+                         train_ratings_info, matfac->getA(), matfac->getB());
+    double val_error = matfac->get_err(matfac->getU(), matfac->getV(),
+                       val_ratings_info, matfac->getA(), matfac->getB());
     double test_error = matfac->get_err(matfac->getU(), matfac->getV(),
-                                       test_ratings_info, REG,  matfac->getA(), matfac->getB());
+                        test_ratings_info,  matfac->getA(), matfac->getB());
 
     cout << "Train error: " << train_error << endl;
-    cout << "Test error: " << test_error << endl;
-    cout << "\n" << endl;
-
-    cout << "Training set predictions" << endl;
-    for (int m = 0; m < 10; m++) {
-        int i = get<0>(Y_train[m]);
-        int j = get<1>(Y_train[m]);
-        int Yij = get<2>(Y_train[m]);
-        cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
-        cout << "Predicted value: " << matfac->predictRating(i, j) << endl;
-    }
-
-    cout << "\n" << endl;
-    cout << "Test set predictions" << endl;
-    for (int m = 0; m < 10; m++) {
-        int i = get<0>(Y_test[m]);
-        int j = get<1>(Y_test[m]);
-        int Yij = get<2>(Y_test[m]);
-        cout << "Y[" << i << "][" << j << "] = " << Yij << endl;
-        cout << "Predicted value: " << matfac->predictRating(i, j) << endl;
-    }
+    cout << "Validation error: " << val_error << endl;
+    cout << "Test/probe error: " << test_error << endl;
 
     return matfac;
 }
 
 void write_preds(SVDPlusPlus *model) {
-    ofstream file ("SVD_predictions.txt");
+    string filename("Time_SVD_preds_" + to_string(K) + "_factors.txt");
+    // If you want this to be descriptive, you have to return a string containing
+    // the corresponding parameters from svdplusplus
+    ofstream file(filename);
     if (file.is_open()) {
-        Data data;
+        // tuple<int, int, int> *qual = data.getQual();
+        // Predict on the probe set
         tuple<int, int, int> *qual = data.getQual();
         for (int point = 0; point < ARRAY_5_SIZE; point++) {
             int i = get<0>(qual[point]);
             int j = get<1>(qual[point]);
+            file << model->predictRating(i, j) << "\n";
+        }
+        file.close();
+    }
+    else {
+        cout << "Unable to open file" << endl;
+    }
+}
+
+void write_probe_preds(SVDPlusPlus *model) {
+    string filename("Time_SVD_probe_preds_" + to_string(K) + "_factors.txt");
+    // If you want this to be descriptive, you have to return a string containing
+    // the corresponding parameters from svdplusplus
+    ofstream file (filename);
+    if (file.is_open()) {
+        // tuple<int, int, int> *qual = data.getQual();
+        // Predict on the probe set
+        tuple<int, int, int, int> *probe = data.getArray(4);
+        for (int point = 0; point < ARRAY_4_SIZE; point++) {
+            // Some jank ass indexing shit if you wanna fix it be my guest
+            int i = get<0>(probe[point]) - 1;
+            int j = get<1>(probe[point]) - 1;
             file << model->predictRating(i, j) << "\n";
         }
         file.close();
@@ -116,5 +105,7 @@ int main(void)
     SVDPlusPlus *model = run_model();
     cout << "Writing the predictions..." << endl;
     write_preds(model);
+    cout << "Writing probe predictions..." << endl;
+    write_probe_preds(model);
     return 0;
 }

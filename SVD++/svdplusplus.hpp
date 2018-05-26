@@ -23,7 +23,7 @@ private:
     bool is_trained = false; // whether model has been trained or not
                              // i.e. if U and V contain meaningful values
 public:
-    SVDPlusPlus(); 
+    SVDPlusPlus(int M, int N, int K, vector<tuple<int, int, int>> *ratings_info);
     ~SVDPlusPlus();
     double **U;
     double **V;
@@ -34,14 +34,12 @@ public:
     vector<tuple<int, int, int>> *ratings_info;
 
     double get_err(double **U, double **V,
-        vector<tuple<int, int, int>> *test_data, double reg, double *a, double *b);
+        vector<tuple<int, int, int>> *test_data, double *a, double *b);
     // Trains model to generate U and V
-    void train_model(int M, int N, int K, double eta, double reg,
-            vector<tuple<int, int, int>> *ratings_info, 
-            vector<tuple<int, int, int>> *validation_ratings_info, 
-            double eps, int max_epochs);
+    void train_model(vector<tuple<int, int, int>> *validation_ratings_info,
+            vector<tuple<int, int, int>> *probe_ratings_info);
     double predictRating(int i, int j);
-    void Train(double reg, double eta);
+    void Train();
 
     //double predictRating(int i, int j);
     double **getU(); // Returns U

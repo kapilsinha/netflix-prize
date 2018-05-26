@@ -67,7 +67,7 @@ Data::Data(void)
                 array_4_index++;
                 break;
             case 5:
-                array_5[array_5_index] = make_tuple(user, movie, date);
+                array_5[array_5_index] = make_tuple(user - 1, movie - 1, date);
                 array_5_index++;
                 break;
             default:
@@ -144,8 +144,8 @@ vector<tuple<int, int, int>> *Data::get_user_data(tuple<int, int, int, int> *arr
         int user = get<0>(info);
 
         // Information given as movie, date, rating
-        tuple<int, int, int> store_info = make_tuple(get<1>(info), get<2>(info), get<3>(info));
-        user_array[user].push_back(store_info);
+        tuple<int, int, int> store_info = make_tuple(get<1>(info) - 1, get<2>(info), get<3>(info));
+        user_array[user - 1].push_back(store_info);
     }
 
     return user_array;

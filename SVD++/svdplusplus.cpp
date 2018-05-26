@@ -23,14 +23,18 @@
 #define ARRAY_4_SIZE 1374739
 #define ARRAY_5_SIZE 2749898
 #define NUM_USERS 458293
+#define DECAY 0.9
 
-#define MAX_EPOCHS 200
+#define MAX_EPOCHS 100
 #define EPS 0.001 // 0.0001
+#define L_UV 0.015
 
 using namespace std;
 
 // Let mu be the overall mean rating
-const double mu = 3.6;
+const double mu = 3.513;
+double eta = 0.007;
+double reg = 0.005;
 
 
 /**
@@ -49,238 +53,12 @@ const double mu = 3.6;
  */
 
 // Actually I don't see the value in storing Y anymore... (I dont see the value in life anymore)
-SVDPlusPlus::SVDPlusPlus()
+SVDPlusPlus::SVDPlusPlus(int M, int N, int K, vector<tuple<int, int, int>> *ratings_info)
 {
-}
-
-/**
- * @brief Destructs a SVDPlusPlus instance.
- */
-SVDPlusPlus::~SVDPlusPlus()
-{
-    if (is_trained) {
-        // Strange way of deleting variables but it fits the way I
-        // initialized it
-        delete[] U[0];
-        delete[] U;
-        delete[] V[0];
-        delete[] V;
-    }
-    U = nullptr;
-    V = nullptr;
-}
-
-/**
- * @brief Computes and updates all of the gradients
- *
- * @param
- * i : user
- * j : movie
- * rating : rating
- * reg : regularization parameter lambda
- * eta : learning rate
- * ratings_info : array of vector of tuples where i^th vector corresponds to ratings
- *              of i^th user
- *
- * @return gradient * eta
- */
-void SVDPlusPlus::Train(double eta, double reg)
-{
-    ProgressBar progressBar(M, 100);
-    int userId, itemId, rating;
-    // THIS IS NOT STOCHASTIC GRADIENT DESCENT ?????
-
-    // RANDOMIZING 
-    std::random_device rd;  // Will be used to obtain a seed for random engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-
-    std::list<int> indices(M);
-    std::iota(indices.begin(), indices.end(), 1);
-
-    std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
-    std::iota(shuffled_indices.begin(),
-              shuffled_indices.end(), indices.begin());
-    std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), gen);
-
-
-
-
-    // END RANDOMIZING
-    for (auto ind: shuffled_indices) {
-        ++progressBar;
-        progressBar.display();
-        userId = *ind;
-        // Number of ratings for this user
-        int num_ratings = ratings_info[userId].size();
-        double sqrtNum = 0;
-        if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
-        // tmpSum stores array of errors for each k?
-        vector <double> tmpSum(K, 0);
-
-        // populating sumMW (Line 90)
-        // WHAT IS SUMMW ?????????? - KARTHIK
-        // MAKE SURE k < K IS FINE - KARTHIK
-        for (int k = 0; k < K; k++) {
-            double sumy = 0;
-            for (int i = 0; i < num_ratings; ++i) {
-                int itemI = get<0>(ratings_info[userId][i]);
-                sumy += y[itemI - 1][k];
-            }
-            sumMW[userId - 1][k] = sumy;
-        }
-
-        // Loop over all movies rated by this userId (Line 98)
-        for (int i = 0; i < num_ratings; i++) {
-            // DOUBLE CHECK THE INDICES - KARTHIK
-            itemId = get<0>(ratings_info[userId][i]);
-            rating = get<2>(ratings_info[userId][i]);
-            double predict = predictRating(userId, itemId);
-            double error = rating - predict;
-            // Subtract 1 because of indexing
-            // userId -= 1;
-            // itemId -= 1;
-            // Update biases using gradients (Line 103)
-            a[userId - 1] += eta * (error - reg * a[userId - 1]);
-            b[itemId - 1] += eta * (error - reg * b[itemId - 1]);
-
-            // Update U and V using gradients (Line 106)
-            for (int k = 0; k < K; k++) {
-                auto uf = U[userId - 1][k];
-                auto mf = V[itemId - 1][k];
-                // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
-                U[userId - 1][k] += eta * (error * mf - 0.015 * uf);
-                V[itemId - 1][k] += eta * (error * (uf + sqrtNum * sumMW[userId - 1][k]) - 0.015 * mf);
-                tmpSum[k] += error * sqrtNum * mf; 
-            }
-        }
-
-        // Update sumMW and y (Line 114)
-        // MAYBE PUT THIS IN THE LOOP ABOVE???
-        // COMPLETELY UNCLEAR ON THE LOGIC HERE OR WTF IS GOING SOMEBODY PLS EXPLAIN - KARTHIK 
-        // ????????????????????????????????????????????????????????????????????????????????
-        for (int j = 0; j < num_ratings; ++j) {
-            itemId = get<0>(ratings_info[userId][j]);
-            for (int k = 0; k < K; k++) {
-                double tmpMW = y[itemId - 1][k];
-                // WHY THE FUCK IS THERE A 0.015 HERE ?????????? - KARTHIK
-                y[itemId - 1][k] += eta * (tmpSum[k] - 0.015 * tmpMW);
-                sumMW[userId - 1][k] += y[itemId - 1][k] - tmpMW;
-            }
-        }
-    }
-
-    // NO FUCKING CLUE WHAT THIS IS EITHER - KARTHIK (Line 123)
-    for (userId = 1; userId <= M; userId++) {
-        int num_ratings = ratings_info[userId].size();
-        double sqrtNum = 0;
-        if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
-        // LITERALLY NO IDEA WHAT ALL OF THIS IS ????????????
-        for (int k = 0; k < K; k++) {
-            double sumy = 0;
-            for (int i = 0; i < num_ratings; i++) {
-                int itemI = get<0>(ratings_info[userId][i]);
-                sumy += y[itemI - 1][k];
-            }
-            sumMW[userId - 1][k] = sumy;
-        }
-
-    }
-    progressBar.done();
-    // THESE GUYS UPDATE LEARNING RATE HERE IDK IF WE WANNA DO THAT
-    return;
-}
-
-
-
-/**
- * @brief Computes mean regularized squared-error of predictions made by
- * estimating Y[i][j] as the dot product of U[i] and V[j]
- *
- * @param
- * Y : matrix of triples (i, j, Y_ij)
- *     where i is the index of a user,
- *           j is the index of a movie,
- *       and Y_ij is user i's rating of movie j and user/movie matrices U and V
- * U : user matrix (factor of Y)
- * V : movie matrix (factor of Y)
- *
- * @return error (MSE)
- */
-double SVDPlusPlus::get_err(double **U, double **V,
-        vector<tuple<int, int, int>> *test_data, double reg, double *a, double *b)
-{
-    // SOMEONE CHECK THIS FUNCTION AT SOME POINT - KARTHIK
-    double err = 0.0;
-    int num = 0;
-    // Loop over users
-    for (int userId = 0; userId < M; userId++) {
-        int num_ratings = test_data[userId].size();
-        // Loop over training points
-        for (int itemI = 0; itemI < num_ratings; itemI++) {
-            int itemId = get<0>(test_data[userId][itemI]);
-            int rating = get<2>(test_data[userId][itemI]);
-            double predict = predictRating(userId, itemId);
-            err += (predict - rating) * (predict - rating);
-            num++;
-        }
-    }
-    if (reg != 0) {
-        double U_norm = 0.0;
-        double V_norm = 0.0;
-        double a_norm = 0.0;
-        double b_norm = 0.0;
-        for (int row = 0; row < M; row++) {
-            for (int col = 0; col < K; col++) {
-                U_norm += U[row][col] * U[row][col];
-            }
-        }
-        for (int row = 0; row < N; row++) {
-            for (int col = 0; col < K; col++) {
-                V_norm += V[row][col] * V[row][col];
-            }
-        }
-        for (int i = 0; i < M; i++) {
-            a_norm += a[i] * a[i];
-        }
-        for (int j = 0; j < N; j++) {
-            b_norm += b[j] * b[j];
-        }
-        err += 0.5 * reg * U_norm;
-        err += 0.5 * reg * V_norm;
-        err += 0.5 * reg * a_norm;
-        err += 0.5 * reg * b_norm;
-    }
-    return sqrt(err / num); 
-}
-
-/**
- * @param
- * M : number of rows in U (U is an M x K matrix)
- * N : number of rows in V^T (V^T is an N x K matrix)
- * K : number of columns in U and V^T
- * eta : learning rate
- * reg : regularization constant
- * Y : input matrix
- * eps : fraction where if regularized MSE between epochs is less than
- *       eps times the decrease in MSE after the first epoch, we stop training
- * max_epochs : maximum number of epochs for training
- * ratings_info : array of vector of tuples where i^th vector corresponds to ratings
- *              of i^th user
- */
-void SVDPlusPlus::train_model(int M, int N, int K, double eta,
-        double reg, vector<tuple<int, int, int>> *ratings_info,
-        vector<tuple<int, int, int>> *validation_ratings_info,
-        double eps, int max_epochs) {
-    cout << "Training model..." << endl;
     this->M = M;
     this->N = N;
     this->K = K;
     this->ratings_info = ratings_info;
-    // Weird way to declare 2-D array but it allocates one contiguous block
-    // stackoverflow.com/questions/29375797/copy-2d-array-using-memcpy/29375830
-
-    eta = 0.01;
-
     // Initialize all arrays
     U = new double *[M];
     U[0] = new double [M * K];
@@ -313,35 +91,239 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
     // Initialize all values to be uniform between -0.5 and 0.5
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < K; j++) {
-            U[i][j] = dist(gen);
-            sumMW[i][j] = dist(gen);
+            U[i][j] = 0.1 * (rand() / (RAND_MAX + 1.0)) / sqrt(K);
+            sumMW[i][j] = 0.1 * (rand() / (RAND_MAX + 1.0)) / sqrt(K);
         }
     }
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < K; j++) {
-            V[i][j] = dist(gen);
+            V[i][j] = 0.1 * (rand() / (RAND_MAX + 1.0)) / sqrt(K);
             y[i][j] = 0;
         }
     }
     for (int i = 0; i < M; i++) {
-        a[i] = dist(gen);
+        a[i] = 0; // dist(gen);
     }
     for (int i = 0; i < N; i++) {
-        b[i] = dist(gen);
+        b[i] = 0; // dist(gen);
+    }
+}
+
+
+/**
+ * @brief Destructs a SVDPlusPlus instance.
+ */
+SVDPlusPlus::~SVDPlusPlus()
+{
+    if (is_trained) {
+        // Strange way of deleting variables but it fits the way I
+        // initialized it
+        delete[] U[0];
+        delete[] U;
+        delete[] V[0];
+        delete[] V;
+    }
+    U = nullptr;
+    V = nullptr;
+}
+
+/**
+ * @brief Computes and updates all of the gradients
+ *
+ * @param
+ * i : user
+ * j : movie
+ * rating : rating
+ * reg : regularization parameter lambda
+ * eta : learning rate
+ * ratings_info : array of vector of tuples where i^th vector corresponds to ratings
+ *              of i^th user
+ *
+ * @return gradient * eta
+ */
+void SVDPlusPlus::Train()
+{
+    ProgressBar progressBar(M, 100);
+    int userId, itemId, rating;
+    // THIS IS NOT STOCHASTIC GRADIENT DESCENT ?????
+
+    // RANDOMIZING
+
+    /*
+    std::random_device rd;  // Will be used to obtain a seed for random engine
+    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
+
+    std::list<int> indices(M);
+    std::iota(indices.begin(), indices.end(), 1);
+
+    std::vector<std::list<int>::iterator> shuffled_indices(indices.size());
+    std::iota(shuffled_indices.begin(),
+              shuffled_indices.end(), indices.begin());
+    std::shuffle(shuffled_indices.begin(), shuffled_indices.end(), gen);
+    */
+
+
+    // END RANDOMIZING
+    // for (auto ind: shuffled_indices) {
+    for (userId = 0; userId < NUM_USERS; userId++) {
+        ++progressBar;
+        progressBar.display();
+        //userId = *ind;
+        // Number of ratings for this user
+        int num_ratings = ratings_info[userId].size();
+        double sqrtNum = 0;
+        if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
+        // tmpSum stores array of errors for each k?
+        vector <double> tmpSum(K, 0);
+
+        // populating sumMW (Line 90)
+        // WHAT IS SUMMW ?????????? - KARTHIK
+        // MAKE SURE k < K IS FINE - KARTHIK
+        for (int k = 0; k < K; k++) {
+            double sumy = 0;
+            for (int i = 0; i < num_ratings; ++i) {
+                int itemI = get<0>(ratings_info[userId][i]);
+                sumy += y[itemI][k];
+            }
+            sumMW[userId][k] = sumy;
+        }
+
+        // Loop over all movies rated by this userId (Line 98)
+        for (int i = 0; i < num_ratings; i++) {
+            // DOUBLE CHECK THE INDICES - KARTHIK
+            itemId = get<0>(ratings_info[userId][i]);
+            rating = get<2>(ratings_info[userId][i]);
+            double predict = predictRating(userId, itemId);
+            double error = rating - predict;
+            // Subtract 1 because of indexing
+            // userId -= 1;
+            // itemId -= 1;
+            // Update biases using gradients (Line 103)
+            a[userId] += eta * (error - reg * a[userId]);
+            b[itemId] += eta * (error - reg * b[itemId]);
+
+            // Update U and V using gradients (Line 106)
+            for (int k = 0; k < K; k++) {
+                auto uf = U[userId][k];
+                auto mf = V[itemId][k];
+                // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
+                U[userId][k] += eta * (error * mf - L_UV * uf);
+                V[itemId][k] += eta * (error * (uf + sqrtNum * sumMW[userId][k]) - L_UV * mf);
+                tmpSum[k] += error * sqrtNum * mf;
+            }
+        }
+
+        // Update sumMW and y (Line 114)
+        // MAYBE PUT THIS IN THE LOOP ABOVE???
+        // COMPLETELY UNCLEAR ON THE LOGIC HERE OR WTF IS GOING SOMEBODY PLS EXPLAIN - KARTHIK
+        // ????????????????????????????????????????????????????????????????????????????????
+        for (int j = 0; j < num_ratings; ++j) {
+            itemId = get<0>(ratings_info[userId][j]);
+            for (int k = 0; k < K; k++) {
+                double tmpMW = y[itemId][k];
+                // WHY THE FUCK IS THERE A 0.015 HERE ?????????? - KARTHIK
+                y[itemId][k] += eta * (tmpSum[k] - L_UV * tmpMW);
+                sumMW[userId][k] += y[itemId][k] - tmpMW;
+            }
+        }
     }
 
+    // NO FUCKING CLUE WHAT THIS IS EITHER - KARTHIK (Line 123)
+    for (userId = 0; userId < M; userId++) {
+        int num_ratings = ratings_info[userId].size();
+        //double sqrtNum = 0;
+        //if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
+
+        for (int k = 0; k < K; k++) {
+            double sumy = 0;
+            for (int i = 0; i < num_ratings; i++) {
+                int itemI = get<0>(ratings_info[userId][i]);
+                sumy += y[itemI][k];
+            }
+            sumMW[userId][k] = sumy;
+        }
+
+    }
+    progressBar.done();
+    eta *= DECAY;
+    // THESE GUYS UPDATE LEARNING RATE HERE IDK IF WE WANNA DO THAT
+    return;
+}
+
+
+
+/**
+ * @brief Computes mean regularized squared-error of predictions made by
+ * estimating Y[i][j] as the dot product of U[i] and V[j]
+ *
+ * @param
+ * Y : matrix of triples (i, j, Y_ij)
+ *     where i is the index of a user,
+ *           j is the index of a movie,
+ *       and Y_ij is user i's rating of movie j and user/movie matrices U and V
+ * U : user matrix (factor of Y)
+ * V : movie matrix (factor of Y)
+ *
+ * @return error (MSE)
+ */
+ double SVDPlusPlus::get_err(double **U, double **V,
+         vector<tuple<int, int, int>> *test_data, double *a, double *b)
+ {
+     // SOMEONE CHECK THIS FUNCTION AT SOME POINT - KARTHIK
+     double err = 0.0;
+     int num = 0;
+     // Loop over users
+     for (int userId = 0; userId < M; userId++) {
+         int num_ratings = test_data[userId].size();
+         // Loop over training points
+         for (int itemI = 0; itemI < num_ratings; itemI++) {
+             int itemId = get<0>(test_data[userId][itemI]);
+             int rating = get<2>(test_data[userId][itemI]);
+             double predict = predictRating(userId, itemId);
+             err += (predict - rating) * (predict - rating);
+             num++;
+         }
+     }
+     return sqrt(err / num);
+ }
+
+
+/**
+ * @param
+ * M : number of rows in U (U is an M x K matrix)
+ * N : number of rows in V^T (V^T is an N x K matrix)
+ * K : number of columns in U and V^T
+ * eta : learning rate
+ * reg : regularization constant
+ * Y : input matrix
+ * eps : fraction where if regularized MSE between epochs is less than
+ *       eps times the decrease in MSE after the first epoch, we stop training
+ * max_epochs : maximum number of epochs for training
+ * ratings_info : array of vector of tuples where i^th vector corresponds to ratings
+ *              of i^th user
+ */
+void SVDPlusPlus::train_model(vector<tuple<int, int, int>> *validation_ratings_info,
+        vector<tuple<int, int, int>> *probe_ratings_info) {
+    cout << "Training model..." << endl;
+    this->M = M;
+    this->N = N;
+    this->K = K;
+
+    double eps = EPS;
+    double max_epochs = MAX_EPOCHS;
     double delta;
     for (int epoch = 0; epoch < max_epochs; epoch++) {
         cout << "Epoch: " << epoch << endl;
         is_trained = true;
-        double before_E_in = get_err(U, V, ratings_info, reg, a, b);
-        
+        double before_E_in = get_err(U, V, ratings_info, a, b);
+
         // Train the model
-        Train(eta, reg);
+        Train();
 
         // Check early stopping conditions
-        double E_in = get_err(U, V, ratings_info, reg, a, b);
-        double E_val = get_err(U, V, validation_ratings_info, reg, a, b);
+        double E_in = get_err(U, V, ratings_info, a, b);
+        double E_val = get_err(U, V, validation_ratings_info, a, b);
+        double E_probe = get_err(U, V, probe_ratings_info, a, b);
         if (epoch == 0) {
             delta = before_E_in - E_in;
         }
@@ -359,6 +341,7 @@ void SVDPlusPlus::train_model(int M, int N, int K, double eta,
             cout << ", Threshold delta error: " << (eps * delta) << endl;
         }
         cout << "Validation error: " << E_val << endl;
+        cout << "Probe error: " << E_probe << endl;
     }
     is_trained = true;
     return;
@@ -386,10 +369,10 @@ double SVDPlusPlus::predictRating(int i, int j)
 
     double dot_product = 0;
     for (int m = 0; m < K; m++) {
-        dot_product += (U[i - 1][m] + sumMW[i - 1][m] * sq) * V[j - 1][m];
+        dot_product += (U[i][m] + sumMW[i][m] * sq) * V[j][m];
     }
 
-    double rating = a[i - 1] + b[j - 1] + mu + dot_product;
+    double rating = a[i] + b[j] + mu + dot_product;
 
     // Cap the ratings
     if (rating < 1) {
