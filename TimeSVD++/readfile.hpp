@@ -28,4 +28,8 @@ public:
     tuple<int, int, int, int> *getArray(int idx); // Returns array_idx
     tuple<int, int, int> *getQual();
     vector<tuple<int, int, int>> *format_user_data(int idx);
+    vector<tuple<int, int, int>> *get_all_data(tuple<int, int, int, int> *arr1, int size1,
+        tuple<int, int, int, int> *arr2, int size2, 
+        tuple<int, int, int, int> *arr3, int size3, 
+        tuple<int, int, int, int> *arr4, int size4);
 };

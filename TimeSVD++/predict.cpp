@@ -16,7 +16,7 @@
 
 #define M 458293 // Number of users
 #define N 17770 // Number of movies
-#define K 200 // Number of factors
+#define K 100 // Number of factors
 
 using namespace std;
 
@@ -25,7 +25,7 @@ Data data;
 /* Run the model. */
 SVDPlusPlus* Predict::run_model(void) {
     // Set train and test set
-    int train_set = 1; // Training set
+    int train_set = 69; // Training set
     int val_set = 2; // Validation set
     int test_set = 4; // Probe set
 
@@ -39,6 +39,8 @@ SVDPlusPlus* Predict::run_model(void) {
     test_ratings_info = data.format_user_data(test_set);
 
     SVDPlusPlus *matfac = new SVDPlusPlus(M, N, K, train_ratings_info);
+
+    // Train the model
     matfac->train_model(val_ratings_info, test_ratings_info);
 
     // Get the errors

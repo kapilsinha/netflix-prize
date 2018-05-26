@@ -151,6 +151,52 @@ vector<tuple<int, int, int>> *Data::get_user_data(tuple<int, int, int, int> *arr
     return user_array;
 }
 
+vector<tuple<int, int, int>> *Data::get_all_data(tuple<int, int, int, int> *arr1, int size1,
+        tuple<int, int, int, int> *arr2, int size2, 
+        tuple<int, int, int, int> *arr3, int size3, 
+        tuple<int, int, int, int> *arr4, int size4) {
+    vector<tuple<int, int, int>> *user_array = new vector<tuple<int, int, int>> [NUM_USERS];
+
+    for (int i = 0; i < size1; i++){
+        tuple<int, int, int, int> info = arr1[i];
+        int user = get<0>(info);
+
+        // Information given as movie, date, rating
+        tuple<int, int, int> store_info = make_tuple(get<1>(info) - 1, get<2>(info), get<3>(info));
+        user_array[user - 1].push_back(store_info);
+    }
+
+    for (int i = 0; i < size2; i++){
+        tuple<int, int, int, int> info = arr2[i];
+        int user = get<0>(info);
+
+        // Information given as movie, date, rating
+        tuple<int, int, int> store_info = make_tuple(get<1>(info) - 1, get<2>(info), get<3>(info));
+        user_array[user - 1].push_back(store_info);
+    }
+
+    for (int i = 0; i < size3; i++){
+        tuple<int, int, int, int> info = arr3[i];
+        int user = get<0>(info);
+
+        // Information given as movie, date, rating
+        tuple<int, int, int> store_info = make_tuple(get<1>(info) - 1, get<2>(info), get<3>(info));
+        user_array[user - 1].push_back(store_info);
+    }
+
+    for (int i = 0; i < size4; i++){
+        tuple<int, int, int, int> info = arr4[i];
+        int user = get<0>(info);
+
+        // Information given as movie, date, rating
+        tuple<int, int, int> store_info = make_tuple(get<1>(info) - 1, get<2>(info), get<3>(info));
+        user_array[user - 1].push_back(store_info);
+    }
+
+    return user_array;
+}
+
+
 vector<tuple<int, int, int>> *Data::format_user_data(int idx)
 {
     switch (idx) {
@@ -162,6 +208,9 @@ vector<tuple<int, int, int>> *Data::format_user_data(int idx)
             return get_user_data(array_3, ARRAY_3_SIZE);
         case 4:
             return get_user_data(array_4, ARRAY_4_SIZE);
+        case 69:
+            return get_all_data(array_1, ARRAY_1_SIZE, array_2, ARRAY_2_SIZE, 
+                array_3, ARRAY_3_SIZE, array_4, ARRAY_4_SIZE);
         default:
             throw "Invalid index for array";
     }

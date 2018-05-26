@@ -25,7 +25,7 @@ Data data;
 /* Run the model. */
 SVDPlusPlus* run_model(void) {
     // Set train and test set
-    int train_set = 1; // Training set
+    int train_set = 69; // Training set
     int val_set = 2; // Validation set
     int test_set = 4; // Probe set
 
