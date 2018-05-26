@@ -57,7 +57,7 @@ SVDPlusPlus* run_model(void) {
 }
 
 void write_preds(SVDPlusPlus *model) {
-    string filename("Time_SVD_preds_" + to_string(K) + "_factors.txt");
+    string filename("SVD++_preds_" + to_string(K) + "_factors.txt");
     // If you want this to be descriptive, you have to return a string containing
     // the corresponding parameters from svdplusplus
     ofstream file(filename);
@@ -78,7 +78,7 @@ void write_preds(SVDPlusPlus *model) {
 }
 
 void write_probe_preds(SVDPlusPlus *model) {
-    string filename("Time_SVD_probe_preds_" + to_string(K) + "_factors.txt");
+    string filename("SVD++_probe_preds_" + to_string(K) + "_factors.txt");
     // If you want this to be descriptive, you have to return a string containing
     // the corresponding parameters from svdplusplus
     ofstream file (filename);

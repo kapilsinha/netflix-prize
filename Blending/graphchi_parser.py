@@ -4,7 +4,7 @@ ARRAY_3_SIZE = 1964391 # Hidden data
 ARRAY_4_SIZE = 1374739 # Probe into test set
 ARRAY_5_SIZE = 2749898 # Qual data
 
-filename = "RBM_probe_qual.txt"
+filename = "RBM2_probe_qual.txt"
 file = open(filename)
 preds = []
 for line in file.readlines():
@@ -17,8 +17,8 @@ qual = preds[ARRAY_4_SIZE:]
 if len(preds) != ARRAY_4_SIZE + ARRAY_5_SIZE:
     print("Fucked")
 
-file = open("RBM_probe.txt", "w")
+file = open("RBM2_probe.txt", "w")
 file.writelines(["%s\n" % item for item in probe])
 
-file = open("RBM_qual.txt", "w")
+file = open("RBM2_qual.txt", "w")
 file.writelines(["%s\n" % item for item in qual])
