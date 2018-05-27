@@ -26,7 +26,7 @@
 #define DECAY 0.9
 
 #define MAX_EPOCHS 100
-#define EPS 0.001 // 0.0001
+#define EPS 0.0001 
 #define L_UV 0.015
 
 using namespace std;
