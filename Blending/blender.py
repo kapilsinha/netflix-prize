@@ -11,8 +11,8 @@ qual = "mu_qual.csv"
 # Models
 
 # Add filename of probe predictions to list below
-probe_models = ["RBM2_probe.txt", "Time_SVD_probe_preds_200_factors.txt", "SVD++_probe_preds_100_factors.txt", "RBM_probe.txt"]
-qual_models = ["RBM2_qual.txt", "Time_SVD_preds_100_factors_probetrained.txt", "SVD++_preds_100_factors.txt", "RBM_qual.txt"]
+probe_models = ["Time_SVD_probe_preds_200_factors.txt", "SVD++_probe_preds_100_factors.txt", "RBM_probe.txt", "PMF_probe.txt"]
+qual_models = ["Time_SVD_preds_100_factors_probetrained.txt", "SVD++_preds_100_factors_probetrained.txt", "RBM_qual.txt", "PMF_qual.txt"]
 
 if len(probe_models) != len(qual_models):
     raise ValueError("Must have qual and probe predictions for all models")
@@ -38,11 +38,11 @@ test = np.array(test).T
 
 # Model
 model = Sequential()
-model.add(Dense(18, input_dim=len(probe_models)))
+model.add(Dense(15, input_dim=len(probe_models)))
 model.add(Dense(1))
 model.compile(optimizer="adam", loss="mean_squared_error", metrics=["accuracy"])
 model.summary()
-model.fit(X, y, epochs=20, batch_size=256)
+model.fit(X, y, epochs=15, batch_size=256)
 
 # Predict on qual set
 print("Writing predictions")
