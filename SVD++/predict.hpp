@@ -1,9 +1,8 @@
 /**
  * @file predict.cpp
- * @author King Nair
  * @date 5/1/18
  *
- * @brief Actually runs the shit
+ * @brief Runs SVD++ and makes predictions
  */
 
 #include <iostream>

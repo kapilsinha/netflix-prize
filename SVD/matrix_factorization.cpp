@@ -1,6 +1,5 @@
 /**
  * @file matrix_factorization.cpp
- * @author Kapil Sinha (Here just in case anyone forgets who made this)...ye
  * @date 04/06/18
  *
  * @brief Performs matrix factorization on our movie rating data
@@ -43,7 +42,6 @@ using namespace std;
  * later.
  */
 
-// Actually I don't see the value in storing Y anymore... (I dont see the value in life anymore)
 MatrixFactorization::MatrixFactorization()
 {
 }

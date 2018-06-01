@@ -1,3 +1,6 @@
+# For whatever reason, this no longer works (but it did on SVD++ before...)
+# Note that you need to compile using Makefile_blend (rename it to Makefile) and
+# then do a make to get the below to work...
 import cppyy
 
 cppyy.include("predict.hpp")

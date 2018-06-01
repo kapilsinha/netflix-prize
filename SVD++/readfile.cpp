@@ -1,6 +1,5 @@
 /**
  * @file readfile.cpp
- * @author Kapil Sinha
  * @date 04/06/18
  *
  * @brief Reads in the file and saves it in several arrays in our data object
@@ -138,8 +137,7 @@ void print_tuple(tuple<int, int, int, int> tup) {
 
 vector<tuple<int, int, int>> *Data::get_user_data(tuple<int, int, int, int> *arr, int size){
     vector<tuple<int, int, int>> *user_array = new vector<tuple<int, int, int>> [NUM_USERS];
-
-    for (int i = 0; i < size; i++){
+for (int i = 0; i < size; i++){
         tuple<int, int, int, int> info = arr[i];
         int user = get<0>(info);
 
@@ -215,49 +213,3 @@ vector<tuple<int, int, int>> *Data::format_user_data(int idx)
             throw "Invalid index for array";
     }
 }
-
-/**
- * Shouldn't be used ultimately (call methods in another file).
- * This is for testing purposes.
- */
-/*
-int main(void)
-{
-    Data data;
-    cout << "Some checks" << endl;
-    cout << "Array 1 element 0: ";
-    print_tuple (data.getArray(1)[0]);
-    cout << "Array 2 element 0: ";
-    print_tuple (data.getArray(2)[0]);
-    cout << "Array 3 element 0: ";
-    print_tuple (data.getArray(3)[0]);
-    cout << "Array 4 element 0: ";
-    print_tuple (data.getArray(4)[0]);
-    cout << "Array 5 element 0: ";
-    print_tuple (data.getArray(5)[0]);
-
-    cout << "Array 1 last element: ";
-    print_tuple (data.getArray(1)[ARRAY_1_SIZE - 1]);
-    cout << "Array 2 last element: ";
-    print_tuple (data.getArray(2)[ARRAY_2_SIZE - 1]);
-    cout << "Array 3 last element: ";
-    print_tuple (data.getArray(3)[ARRAY_3_SIZE - 1]);
-    cout << "Array 4 last element: ";
-    print_tuple (data.getArray(4)[ARRAY_4_SIZE - 1]);
-    cout << "Array 5 last element: ";
-    print_tuple (data.getArray(5)[ARR5_SIZE - 1]);
-
-    cout << "Array 1 garbage: ";
-    print_tuple (data.getArray(1)[ARRAY_1_SIZE]);
-    cout << "Array 2 garbage: ";
-    print_tuple (data.getArray(2)[ARRAY_2_SIZE]);
-    cout << "Array 3 garbage: ";
-    print_tuple (data.getArray(3)[ARRAY_3_SIZE]);
-    cout << "Array 4 garbage: ";
-    print_tuple (data.getArray(4)[ARRAY_4_SIZE]);
-    cout << "Array 5 garbage: ";
-    print_tuple (data.getArray(5)[ARRAY_5_SIZE]);
-
-    return 0;
-}
-*/

@@ -1,6 +1,5 @@
 /**
  * @file matrix_factorization.hpp
- * @author Kapil Sinha
  * @date 04/06/18
  *
  * @brief Performs matrix factorization on our movie rating data
@@ -41,11 +40,8 @@ public:
     double predictRating(int i, int j);
     void Train();
 
-    //double predictRating(int i, int j);
     double **getU(); // Returns U
-    // double *getUi(int row); // Returns U[row]
     double **getV(); // Returns V
-    // double *getVj(int row); // Returns V[row]
     double *getA();
     double *getB();
 };

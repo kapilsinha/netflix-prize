@@ -1,6 +1,5 @@
 /**
  * @file readfile.hpp
- * @author Kapil Sinha
  * @date 04/06/18
  *
  * @brief Reads in the file and saves it in several arrays in our data object

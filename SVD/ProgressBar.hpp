@@ -5,6 +5,7 @@
 #include <iostream>
 
 class ProgressBar {
+
 private:
     unsigned int ticks = 0;
 

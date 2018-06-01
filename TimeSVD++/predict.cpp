@@ -1,9 +1,8 @@
 /**
  * @file predict.cpp
- * @author King Nair
  * @date 5/1/18
  *
- * @brief Actually runs the shit
+ * @brief Runs TimeSVD++ and makes predictions
  */
 #include "predict.hpp"
 #include <string>
@@ -90,7 +89,7 @@ void Predict::write_probe_preds(SVDPlusPlus *model) {
         // Predict on the probe set
         tuple<int, int, int, int> *probe = data.getArray(4);
         for (int point = 0; point < ARRAY_4_SIZE; point++) {
-            // Some jank ass indexing shit if you wanna fix it be my guest
+            // weird indexing
             int i = get<0>(probe[point]) - 1;
             int j = get<1>(probe[point]) - 1;
             int t = get<2>(probe[point]);

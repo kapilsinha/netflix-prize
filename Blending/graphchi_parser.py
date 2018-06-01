@@ -15,7 +15,7 @@ probe = preds[:ARRAY_4_SIZE]
 qual = preds[ARRAY_4_SIZE:]
 
 if len(preds) != ARRAY_4_SIZE + ARRAY_5_SIZE:
-    print("Fucked")
+    print("Error! Make sure you removed the header (first few lines) that are not data")
 
 file = open("PMF_probe.txt", "w")
 file.writelines(["%s\n" % item for item in probe])

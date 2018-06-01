@@ -1,6 +1,5 @@
 /**
  * @file matrix_factorization.hpp
- * @author Kapil Sinha
  * @date 04/06/18
  *
  * @brief Performs matrix factorization on our movie rating data

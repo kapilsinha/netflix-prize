@@ -1,6 +1,5 @@
 /**
  * @file svdplusplus.cpp
- * @author Karthik Karnik
  * @date 05/14/18
  *
  * @brief Performs matrix factorization on our movie rating data
@@ -46,15 +45,8 @@ double G = 0.007;                // general gamma
  *
  * @param
  * Y : input matrix
- *
- * NOTE: The Data class outputs an array of 4-tuples including date, but this
- * class takes an input of 3-tuples ignoring date. To make them work together,
- * you need to remove the date element from the elements. I could do that here
- * but I am keeping this class general so the bridge will need to be made
- * later.
  */
 
-// Actually I don't see the value in storing Y anymore... (I dont see the value in life anymore)
 SVDPlusPlus::SVDPlusPlus(int M, int N, int K, vector<tuple<int, int, int>> *ratings_info)
 {
     this->M = M;
@@ -213,7 +205,7 @@ void SVDPlusPlus::Train()
         int num_ratings = ratings_info[userId].size();
         double sqrtNum = 0;
         if (num_ratings > 1) sqrtNum = 1 / sqrt(num_ratings);
-        // tmpSum stores array of errors for each k?
+        // tmpSum stores array of errors for each k
         vector <double> tmpSum(K, 0);
 
         // populating sumMW 
@@ -226,7 +218,7 @@ void SVDPlusPlus::Train()
             sumMW[userId][k] = sumy;
         }
 
-        // Loop over all movies rated by this userId (Line 98)
+        // Loop over all movies rated by this userId
         for (int i = 0; i < num_ratings; i++) {
 
             itemId = get<0>(ratings_info[userId][i]);
@@ -242,37 +234,29 @@ void SVDPlusPlus::Train()
             Alpha_u[userId] += G_alpha * (error * calc_dev_u(userId,timeval)  - L_ALPHA * Alpha_u[userId]);
             B_ut[userId][timeval] += G * (error - L * B_ut[userId][timeval]);
 
-
-            // Update U and V using gradients (Line 106)
+            // Update U and V using gradients
             for (int k = 0; k < K; k++) {
                 auto uf = U[userId][k];
                 auto mf = V[itemId][k];
-                // AGAIN THE MAGICAL 0.015 COMING OUT OF ALADDIN'S ASS
                 U[userId][k] += G * (error * mf - L_UV * uf);
                 V[itemId][k] += G * (error * (uf + sqrtNum * sumMW[userId][k]) - L_UV * mf);
                 tmpSum[k] += error * sqrtNum * mf;
             }
         }
 
-        // Update sumMW and y (Line 114)
-        // MAYBE PUT THIS IN THE LOOP ABOVE???
-        // COMPLETELY UNCLEAR ON THE LOGIC HERE OR WTF IS GOING SOMEBODY PLS EXPLAIN - KARTHIK
-        // ????????????????????????????????????????????????????????????????????????????????
+        // Update sumMW and y
         for (int j = 0; j < num_ratings; ++j) {
             itemId = get<0>(ratings_info[userId][j]);
             for (int k = 0; k < K; k++) {
                 double tmpMW = y[itemId][k];
-                // WHY THE FUCK IS THERE A 0.015 HERE ?????????? - KARTHIK
                 y[itemId][k] += G * (tmpSum[k] - L_UV * tmpMW);
                 sumMW[userId][k] += y[itemId][k] - tmpMW;
             }
         }
     }
 
-    // NO FUCKING CLUE WHAT THIS IS EITHER - KARTHIK (Line 123)
     for (userId = 0; userId < M; userId++) {
         int num_ratings = ratings_info[userId].size();
-        // LITERALLY NO IDEA WHAT ALL OF THIS IS ????????????
         for (int k = 0; k < K; k++) {
             double sumy = 0;
             for (int i = 0; i < num_ratings; i++) {
@@ -323,7 +307,6 @@ int SVDPlusPlus::calc_bin(int t)
 double SVDPlusPlus::get_err(double **U, double **V,
         vector<tuple<int, int, int>> *test_data, double *a, double *b)
 {
-    // SOMEONE CHECK THIS FUNCTION AT SOME POINT - KARTHIK
     double err = 0.0;
     int num = 0;
     // Loop over users
