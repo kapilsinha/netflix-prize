@@ -47,6 +47,7 @@ model.fit(X, y, epochs=15, batch_size=256)
 # Predict on qual set
 print("Writing predictions")
 preds = model.predict(test)
+
 # Cap the ratings
 for i in range(len(preds)):
   if preds[i] < 1:
